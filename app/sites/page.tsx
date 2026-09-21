@@ -4,6 +4,7 @@ import { PageHeader, Badge, ProgressBar } from "@/components/ui";
 import { SitesFilterBar } from "@/components/SitesFilterBar";
 import { PHASE_BY_CODE, OVERALL_LABELS } from "@/lib/lifecycle";
 import { fmtDate } from "@/lib/format";
+import { Plus } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -25,7 +26,11 @@ export default async function SitesPage({
 
   return (
     <div>
-      <PageHeader title="المواقع" subtitle={`${sites.length} موقعاً`} />
+      <PageHeader title="المواقع" subtitle={`${sites.length} موقعاً`}>
+        <Link href="/sites/new" className="btn-primary flex items-center gap-1.5">
+          <Plus size={16} /> موقع جديد
+        </Link>
+      </PageHeader>
       <SitesFilterBar regions={options.regions} batches={options.batches} />
 
       <div className="card overflow-hidden">

@@ -5,6 +5,7 @@ import { Badge, ProgressBar } from "@/components/ui";
 import { LifecycleTimeline } from "@/components/LifecycleTimeline";
 import { OVERALL_LABELS } from "@/lib/lifecycle";
 import { fmtDate, fmtNum, badge } from "@/lib/format";
+import { Pencil } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -92,9 +93,14 @@ export default async function SiteDetailPage({
               {site.region} · {site.subRegion} · {site.siteType}
             </div>
           </div>
-          <div className="text-left">
-            <Badge status={site.overallStatus} label={OVERALL_LABELS[site.overallStatus as keyof typeof OVERALL_LABELS]?.ar ?? site.overallStatus} />
-            <div className="mt-2 w-48"><ProgressBar pct={site.progressPct} /></div>
+          <div className="flex flex-col items-end gap-2">
+            <div className="flex items-center gap-2">
+              <Badge status={site.overallStatus} label={OVERALL_LABELS[site.overallStatus as keyof typeof OVERALL_LABELS]?.ar ?? site.overallStatus} />
+              <Link href={`/sites/${site.id}/edit`} className="btn-primary flex items-center gap-1.5">
+                <Pencil size={15} /> إدخال / تعديل البيانات
+              </Link>
+            </div>
+            <div className="w-48"><ProgressBar pct={site.progressPct} /></div>
           </div>
         </div>
       </div>
