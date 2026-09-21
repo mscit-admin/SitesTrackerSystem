@@ -2,6 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useCallback } from "react";
+import { Search, X } from "lucide-react";
 import { OVERALL_LABELS } from "@/lib/lifecycle";
 
 const STATUS_OPTIONS = Object.entries(OVERALL_LABELS).map(([k, v]) => ({
@@ -30,44 +31,42 @@ export function SitesFilterBar({
   );
 
   const val = (k: string) => params.get(k) ?? "";
-  const selCls =
-    "rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand focus:outline-none";
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
-      <input
-        type="search"
-        defaultValue={val("q")}
-        placeholder="بحث بالمعرّف أو الاسم أو المالك…"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") update("q", (e.target as HTMLInputElement).value);
-        }}
-        className={`${selCls} min-w-56 flex-1`}
-      />
-      <select className={selCls} value={val("region")} onChange={(e) => update("region", e.target.value)}>
+      <div className="relative min-w-56 flex-1">
+        <Search size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" />
+        <input
+          type="search"
+          defaultValue={val("q")}
+          placeholder="بحث بالمعرّف أو الاسم أو المالك…"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") update("q", (e.target as HTMLInputElement).value);
+          }}
+          className="field w-full pr-9"
+        />
+      </div>
+      <select className="field" value={val("region")} onChange={(e) => update("region", e.target.value)}>
         <option value="">كل المناطق</option>
         {regions.map((r) => (
           <option key={r} value={r}>{r}</option>
         ))}
       </select>
-      <select className={selCls} value={val("status")} onChange={(e) => update("status", e.target.value)}>
+      <select className="field" value={val("status")} onChange={(e) => update("status", e.target.value)}>
         <option value="">كل الحالات</option>
         {STATUS_OPTIONS.map((s) => (
           <option key={s.value} value={s.value}>{s.label}</option>
         ))}
       </select>
-      <select className={selCls} value={val("batch")} onChange={(e) => update("batch", e.target.value)}>
+      <select className="field" value={val("batch")} onChange={(e) => update("batch", e.target.value)}>
         <option value="">كل الدُفعات</option>
         {batches.map((b) => (
           <option key={b} value={b}>{b}</option>
         ))}
       </select>
       {(val("q") || val("region") || val("status") || val("batch") || val("phase")) && (
-        <button
-          onClick={() => router.push("/sites")}
-          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500 hover:bg-slate-50"
-        >
-          مسح الفلاتر
+        <button onClick={() => router.push("/sites")} className="btn-ghost flex items-center gap-1">
+          <X size={15} /> مسح
         </button>
       )}
     </div>

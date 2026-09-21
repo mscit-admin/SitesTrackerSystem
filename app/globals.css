@@ -3,7 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --bg: #f1f5f9;
+  --bg: #f4f5f6;
+  --border: #e2e6e9;
 }
 
 html {
@@ -12,33 +13,49 @@ html {
 
 body {
   background: var(--bg);
-  color: #0f172a;
+  color: #1f272e;
+  font-size: 14px;
 }
 
-/* Thin scrollbars for wide tables */
+/* Thin scrollbars (Frappe-like) */
 .scroll-slim::-webkit-scrollbar {
   height: 8px;
   width: 8px;
 }
 .scroll-slim::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: #d1d8dd;
   border-radius: 9999px;
+}
+.scroll-slim::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 @layer components {
+  /* ERPNext-style flat card with hairline border */
   .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-lg border border-gray-200 bg-white shadow-card;
   }
   .stat-num {
-    @apply text-3xl font-bold tabular-nums;
+    @apply text-[26px] font-semibold tabular-nums leading-none;
   }
+  /* Table header cell (light, uppercase-ish muted) */
   .th {
-    @apply px-3 py-2 text-right text-xs font-semibold text-slate-500 whitespace-nowrap;
+    @apply px-3 py-2.5 text-right text-xs font-medium text-gray-500 whitespace-nowrap;
   }
   .td {
-    @apply px-3 py-2 text-sm text-slate-700 whitespace-nowrap;
+    @apply px-3 py-2.5 text-sm text-gray-800 whitespace-nowrap;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium;
+    @apply inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs font-medium;
+  }
+  /* Frappe primary button */
+  .btn-primary {
+    @apply rounded-md bg-brand px-3.5 py-2 text-sm font-medium text-white transition hover:bg-brand-dark disabled:opacity-50;
+  }
+  .btn-ghost {
+    @apply rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50;
+  }
+  .field {
+    @apply rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-brand focus:ring-2 focus:ring-brand/15;
   }
 }

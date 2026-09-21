@@ -18,31 +18,31 @@ export function fmtNum(n: number | null | undefined, digits = 0): string {
   }).format(n);
 }
 
-// Tailwind-safe status colour classes (kept static so JIT keeps them).
+// Frappe/ERPNext-style soft indicator pills (static classes so JIT keeps them).
 export const STATUS_BADGE: Record<string, string> = {
-  DONE: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  IN_PROGRESS: "bg-amber-100 text-amber-800 border-amber-200",
-  NOT_STARTED: "bg-slate-100 text-slate-700 border-slate-200",
-  NA: "bg-zinc-100 text-zinc-500 border-zinc-200",
-  BLOCKED: "bg-red-100 text-red-800 border-red-200",
-  ONAIR: "bg-sky-100 text-sky-800 border-sky-200",
-  HANDED_OVER: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  IN_OPERATION: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  OPEN: "bg-red-100 text-red-800 border-red-200",
-  CLOSED: "bg-slate-100 text-slate-600 border-slate-200",
-  Critical: "bg-red-100 text-red-800 border-red-200",
-  High: "bg-orange-100 text-orange-800 border-orange-200",
-  Medium: "bg-amber-100 text-amber-800 border-amber-200",
-  Low: "bg-emerald-100 text-emerald-800 border-emerald-200",
+  DONE: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  IN_PROGRESS: "bg-amber-50 text-amber-700 border-amber-100",
+  NOT_STARTED: "bg-gray-100 text-gray-600 border-gray-200",
+  NA: "bg-gray-100 text-gray-400 border-gray-200",
+  BLOCKED: "bg-red-50 text-red-700 border-red-100",
+  ONAIR: "bg-brand-soft text-brand-dark border-blue-100",
+  HANDED_OVER: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  IN_OPERATION: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  OPEN: "bg-red-50 text-red-700 border-red-100",
+  CLOSED: "bg-gray-100 text-gray-500 border-gray-200",
+  Critical: "bg-red-50 text-red-700 border-red-100",
+  High: "bg-orange-50 text-orange-700 border-orange-100",
+  Medium: "bg-amber-50 text-amber-700 border-amber-100",
+  Low: "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
 
 export function badge(status: string): string {
-  return STATUS_BADGE[status] ?? "bg-slate-100 text-slate-700 border-slate-200";
+  return STATUS_BADGE[status] ?? "bg-gray-100 text-gray-600 border-gray-200";
 }
 
 export function progressColor(pct: number): string {
   if (pct >= 100) return "bg-emerald-500";
-  if (pct >= 60) return "bg-sky-500";
+  if (pct >= 60) return "bg-brand";
   if (pct >= 30) return "bg-amber-500";
-  return "bg-slate-400";
+  return "bg-gray-400";
 }

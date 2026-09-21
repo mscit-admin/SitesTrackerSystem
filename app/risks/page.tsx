@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard, Badge } from "@/components/ui";
 import { fmtNum } from "@/lib/format";
+import { ShieldAlert, ShieldX, Shield, ShieldCheck } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -26,10 +27,10 @@ export default async function RisksPage() {
       <PageHeader title="سجل المخاطر" subtitle={`${risks.length} مخاطرة مسجّلة`} />
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="حرجة" value={count("Critical")} tone="red" />
-        <StatCard label="عالية" value={count("High")} tone="amber" />
-        <StatCard label="متوسطة" value={count("Medium")} tone="sky" />
-        <StatCard label="منخفضة" value={count("Low")} tone="emerald" />
+        <StatCard label="حرجة" value={count("Critical")} tone="red" icon={ShieldX} />
+        <StatCard label="عالية" value={count("High")} tone="amber" icon={ShieldAlert} />
+        <StatCard label="متوسطة" value={count("Medium")} tone="sky" icon={Shield} />
+        <StatCard label="منخفضة" value={count("Low")} tone="emerald" icon={ShieldCheck} />
       </div>
 
       <div className="card overflow-hidden">

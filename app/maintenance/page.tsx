@@ -4,6 +4,7 @@ import { PageHeader, StatCard, Badge } from "@/components/ui";
 import { NewTicketForm } from "@/components/NewTicketForm";
 import { resolveTicket, completePreventive } from "./actions";
 import { fmtDate } from "@/lib/format";
+import { Building2, CalendarClock, Wrench, AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -41,10 +42,10 @@ export default async function MaintenancePage() {
       />
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="مواقع قيد التشغيل" value={inOperation} tone="emerald" />
-        <StatCard label="صيانة دورية متأخرة" value={pmOverdue} tone="red" />
-        <StatCard label="بلاغات مفتوحة" value={openTickets} tone="amber" />
-        <StatCard label="مهام صيانة مجدولة" value={pmDueSoon.length} tone="sky" />
+        <StatCard label="مواقع قيد التشغيل" value={inOperation} tone="emerald" icon={Building2} />
+        <StatCard label="صيانة دورية متأخرة" value={pmOverdue} tone="red" icon={AlertTriangle} />
+        <StatCard label="بلاغات مفتوحة" value={openTickets} tone="amber" icon={Wrench} />
+        <StatCard label="مهام صيانة مجدولة" value={pmDueSoon.length} tone="sky" icon={CalendarClock} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

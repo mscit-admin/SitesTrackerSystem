@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDashboard } from "@/lib/queries";
 import { PageHeader, StatCard, ProgressBar } from "@/components/ui";
 import { fmtNum } from "@/lib/format";
+import { Antenna, Activity, Radio, CheckCircle2, Loader, AlertTriangle } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +19,12 @@ export default async function DashboardPage() {
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="إجمالي المواقع" value={fmtNum(d.total)} tone="brand" />
-        <StatCard label="نسبة الإنجاز" value={`${d.avgProgress}%`} tone="sky" sub="متوسط عبر المشروع" />
-        <StatCard label="على الهواء" value={fmtNum(d.onair)} tone="sky" sub={`${Math.round((d.onair / d.total) * 100)}% من المواقع`} />
-        <StatCard label="مُسلّمة للتشغيل" value={fmtNum(d.inOperation)} tone="emerald" />
-        <StatCard label="قيد التنفيذ" value={fmtNum(d.inProgress + d.notStarted)} tone="amber" />
-        <StatCard label="مشاكل مفتوحة" value={fmtNum(d.openIssues)} tone="red" />
+        <StatCard label="إجمالي المواقع" value={fmtNum(d.total)} tone="brand" icon={Antenna} />
+        <StatCard label="نسبة الإنجاز" value={`${d.avgProgress}%`} tone="sky" sub="متوسط عبر المشروع" icon={Activity} />
+        <StatCard label="على الهواء" value={fmtNum(d.onair)} tone="sky" sub={`${Math.round((d.onair / d.total) * 100)}% من المواقع`} icon={Radio} />
+        <StatCard label="مُسلّمة للتشغيل" value={fmtNum(d.inOperation)} tone="emerald" icon={CheckCircle2} />
+        <StatCard label="قيد التنفيذ" value={fmtNum(d.inProgress + d.notStarted)} tone="amber" icon={Loader} />
+        <StatCard label="مشاكل مفتوحة" value={fmtNum(d.openIssues)} tone="red" icon={AlertTriangle} />
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">

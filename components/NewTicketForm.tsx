@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Plus } from "lucide-react";
 import { createTicket } from "@/app/maintenance/actions";
 
 export function NewTicketForm({
@@ -11,8 +12,7 @@ export function NewTicketForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, setPending] = useState(false);
 
-  const inputCls =
-    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-brand focus:outline-none";
+  const inputCls = "field w-full";
 
   return (
     <form
@@ -70,12 +70,8 @@ export function NewTicketForm({
         <input name="reportedBy" className={inputCls} />
       </div>
       <div className="flex items-end">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand-light disabled:opacity-50"
-        >
-          {pending ? "جارٍ الحفظ…" : "تسجيل البلاغ"}
+        <button type="submit" disabled={pending} className="btn-primary flex items-center gap-1.5">
+          <Plus size={16} /> {pending ? "جارٍ الحفظ…" : "تسجيل البلاغ"}
         </button>
       </div>
     </form>
