@@ -9,11 +9,12 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: [
-          "var(--font-cairo)",
+          "Cairo",
           "Inter",
           "-apple-system",
           "Segoe UI",
           "Tahoma",
+          "Arial",
           "sans-serif",
         ],
       },
