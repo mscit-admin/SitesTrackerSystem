@@ -1,0 +1,202 @@
+// GSDN Sites Tracker — Prisma schema
+// SQLite for local dev; switch `provider` to "postgresql" for production.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A telecom site tracked across its full lifecycle.
+model Site {
+  id           String  @id @default(cuid())
+  seq          Int?
+  siteId       String  @unique
+  name         String?
+  towerOwner   String?
+  ownerSiteId  String?
+  latitude     Float?
+  longitude    Float?
+
+  existingOrNew String?
+  rtOrGf        String?
+  towerType     String?
+  towerHeight   Float?
+  busbarHeight  Float?
+
+  subRegion String?
+  region    String?
+  scenario  String? // Outdoor / Indoor
+  siteType  String? // FN / HUB / Terminal / MFN / Core
+
+  uplinkSite   String?
+  backupSite   String?
+  belongToFN   String?
+  primaryMFN   String?
+  secondaryMFN String?
+
+  cabinetFoundationType String?
+  cabinetFoundationDims String?
+  deliveryBatch         String?
+
+  // Statement of Work flags
+  sowTowerErection String?
+  sowSiteAdaption  String?
+  sowGecolRequired String?
+  sowHlcRequired   String?
+
+  // ---- Computed lifecycle summary (filled by seed / on update) ----
+  currentPhase  String  @default("DESIGN")
+  progressPct   Int     @default(0)
+  isOnair       Boolean @default(false)
+  isHandedOver  Boolean @default(false)
+  overallStatus String  @default("IN_PROGRESS") // NOT_STARTED / IN_PROGRESS / ONAIR / HANDED_OVER / IN_OPERATION / BLOCKED
+
+  // ---- Key denormalised dates for quick listing/sorting ----
+  rfSurveyDate  DateTime?
+  prDate        DateTime?
+  cwPacDate     DateTime?
+  cwFacDate     DateTime?
+  rfiDate       DateTime?
+  teInstallDate DateTime?
+  onairDate     DateTime?
+  patDate       DateTime?
+  omHandoverDate DateTime?
+
+  // ---- Rich detail kept as JSON strings (parsed in the app) ----
+  phaseData String? // full grouped lifecycle payload
+  cwBoq     String? // civil-works bill of quantities
+  teBoq     String? // telecom-equipment specs & solution
+
+  milestones         Milestone[]
+  issues             Issue[]
+  maintenanceTickets MaintenanceTicket[]
+  preventiveTasks    PreventiveMaintenance[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([region])
+  @@index([currentPhase])
+  @@index([overallStatus])
+}
+
+/// A single lifecycle stage for a site. Uniform across design → handover → O&M.
+model Milestone {
+  id          Int       @id @default(autoincrement())
+  site        Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId      String
+  phaseCode   String // DESIGN, ACQUISITION, CW_PROCUREMENT, ...
+  phaseOrder  Int
+  status      String    @default("NOT_STARTED") // NOT_STARTED / IN_PROGRESS / DONE / NA / BLOCKED
+  plannedDate DateTime?
+  actualDate  DateTime?
+  note        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([siteId, phaseCode])
+  @@index([phaseCode])
+  @@index([status])
+}
+
+/// Pending issue / remark attached to a site.
+model Issue {
+  id        Int      @id @default(autoincrement())
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId    String
+  title     String
+  owner     String?
+  remark    String?
+  status    String   @default("OPEN") // OPEN / CLOSED
+  severity  String   @default("MEDIUM")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+/// Project-level risk register entry.
+model Risk {
+  id             Int       @id @default(autoincrement())
+  riskId         String    @unique
+  statement      String
+  category       String?
+  scope          String? // CW / TE / Both
+  affectedSites  Int?
+  probability    Int?
+  impact         Int?
+  score          Int?
+  level          String? // Critical / High / Medium / Low
+  response       String? // Mitigate / Accept / ...
+  mitigation     String?
+  riskOwner      String?
+  actionOwner    String?
+  targetDate     DateTime?
+  status         String    @default("Open")
+  trend          String? // Increasing / Stable / Decreasing
+  lastReviewDate DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([level])
+  @@index([status])
+}
+
+/// Corrective maintenance ticket (post-handover O&M phase).
+model MaintenanceTicket {
+  id          Int       @id @default(autoincrement())
+  site        Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId      String
+  title       String
+  category    String? // Power / Fiber / RF / MW / Civil / Security / Other
+  priority    String    @default("MEDIUM") // LOW / MEDIUM / HIGH / CRITICAL
+  status      String    @default("OPEN") // OPEN / IN_PROGRESS / RESOLVED / CLOSED
+  description String?
+  reportedBy  String?
+  assignedTo  String?
+  reportedAt  DateTime  @default(now())
+  resolvedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([priority])
+}
+
+/// Scheduled preventive maintenance task (post-handover O&M phase).
+model PreventiveMaintenance {
+  id            Int       @id @default(autoincrement())
+  site          Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  siteId        String
+  taskType      String // e.g. Quarterly Inspection, Battery Test, Generator Service
+  frequencyDays Int       @default(90)
+  lastDoneAt    DateTime?
+  nextDueAt     DateTime?
+  status        String    @default("SCHEDULED") // SCHEDULED / DUE / OVERDUE / DONE
+  assignedTo    String?
+  note          String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([nextDueAt])
+}
+
+/// System user (roles for the different teams). Auth wired in a later phase.
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  role      String   @default("VIEWER") // ADMIN / DESIGN / CIVIL / TE / OM / VIEWER
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

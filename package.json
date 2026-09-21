@@ -1,0 +1,36 @@
+{
+  "name": "sites-tracker-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GSDN Telecom Sites Tracker — نظام متابعة مواقع الاتصالات",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:reset": "prisma db push --force-reset && npm run db:seed",
+    "setup": "prisma generate && prisma db push && npm run db:seed"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "next": "^15.5.25",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "10.4.19",
+    "postcss": "^8.5.28",
+    "prisma": "5.22.0",
+    "tailwindcss": "3.4.10",
+    "tsx": "^4.20.3",
+    "typescript": "5.5.3"
+  }
+}
