@@ -16,27 +16,48 @@ export function RowActions({
   pendingDeletion: boolean;
 }) {
   const router = useRouter();
-  const [menu, setMenu] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const [modal, setModal] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const wrapRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menu = pos !== null;
+
+  const MENU_W = 176;
+  function toggle() {
+    if (menu) { setPos(null); return; }
+    const r = btnRef.current!.getBoundingClientRect();
+    // Open below the button; keep the menu fully on-screen (RTL-friendly).
+    const left = Math.min(Math.max(8, r.right - MENU_W), window.innerWidth - MENU_W - 8);
+    setPos({ top: r.bottom + 4, left });
+  }
 
   useEffect(() => {
     if (!menu) return;
-    const onDoc = (e: MouseEvent) => {
-      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setMenu(false);
+    const close = (e: Event) => {
+      const t = e.target as Node;
+      if (btnRef.current?.contains(t) || menuRef.current?.contains(t)) return;
+      setPos(null);
     };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
+    const dismiss = () => setPos(null);
+    document.addEventListener("mousedown", close);
+    window.addEventListener("scroll", dismiss, true);
+    window.addEventListener("resize", dismiss);
+    return () => {
+      document.removeEventListener("mousedown", close);
+      window.removeEventListener("scroll", dismiss, true);
+      window.removeEventListener("resize", dismiss);
+    };
   }, [menu]);
 
   const item = "flex w-full items-center gap-2 px-3 py-2 text-right text-sm hover:bg-gray-50";
 
   return (
-    <div className="relative flex justify-center" ref={wrapRef}>
+    <div className="flex justify-center">
       <button
-        onClick={() => setMenu((v) => !v)}
+        ref={btnRef}
+        onClick={toggle}
         className="rounded-md p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
         title="إجراءات"
       >
@@ -44,16 +65,21 @@ export function RowActions({
       </button>
 
       {menu && (
-        <div className="absolute top-8 z-20 w-40 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-pop" style={{ insetInlineStart: 0 }}>
-          <Link href={`/sites/${siteId}`} className={`${item} text-gray-700`} onClick={() => setMenu(false)}>
+        <div
+          ref={menuRef}
+          dir="rtl"
+          className="fixed z-50 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-pop"
+          style={{ top: pos!.top, left: pos!.left }}
+        >
+          <Link href={`/sites/${siteId}`} className={`${item} text-gray-700`} onClick={() => setPos(null)}>
             <Eye size={15} className="text-gray-400" /> عرض الموقع
           </Link>
-          <Link href={`/sites/${siteId}/edit`} className={`${item} text-gray-700`} onClick={() => setMenu(false)}>
+          <Link href={`/sites/${siteId}/edit`} className={`${item} text-gray-700`} onClick={() => setPos(null)}>
             <Pencil size={15} className="text-gray-400" /> تعديل
           </Link>
           <button
             disabled={pendingDeletion}
-            onClick={() => { setMenu(false); setModal(true); setError(null); }}
+            onClick={() => { setPos(null); setModal(true); setError(null); }}
             className={`${item} text-red-600 disabled:cursor-not-allowed disabled:text-gray-300`}
           >
             <Trash2 size={15} /> {pendingDeletion ? "طلب حذف قائم" : "حذف"}
