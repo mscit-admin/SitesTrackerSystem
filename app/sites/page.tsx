@@ -4,7 +4,7 @@ import { PageHeader, Badge, ProgressBar } from "@/components/ui";
 import { SitesFilterBar } from "@/components/SitesFilterBar";
 import { PHASE_BY_CODE, OVERALL_LABELS } from "@/lib/lifecycle";
 import { fmtDate } from "@/lib/format";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +27,19 @@ export default async function SitesPage({
   return (
     <div>
       <PageHeader title="المواقع" subtitle={`${sites.length} موقعاً`}>
-        <Link href="/sites/new" className="btn-primary flex items-center gap-1.5">
-          <Plus size={16} /> موقع جديد
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href="/GSDN_Master.xlsb"
+            download
+            className="btn-ghost flex items-center gap-1.5"
+            title="تنزيل ملف الإكسل الأصلي (GSDN Master)"
+          >
+            <Download size={16} /> تحميل ملف الإكسل
+          </a>
+          <Link href="/sites/new" className="btn-primary flex items-center gap-1.5">
+            <Plus size={16} /> موقع جديد
+          </Link>
+        </div>
       </PageHeader>
       <SitesFilterBar regions={options.regions} batches={options.batches} />
 
