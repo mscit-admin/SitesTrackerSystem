@@ -5,6 +5,7 @@ import { SitesFilterBar } from "@/components/SitesFilterBar";
 import { PHASE_BY_CODE, OVERALL_LABELS } from "@/lib/lifecycle";
 import { fmtDate } from "@/lib/format";
 import { Plus, Download } from "lucide-react";
+import { ImportExcelButton } from "@/components/ImportExcelButton";
 
 export const dynamic = "force-dynamic";
 
@@ -36,6 +37,7 @@ export default async function SitesPage({
           >
             <Download size={16} /> تحميل ملف الإكسل
           </a>
+          <ImportExcelButton />
           <Link href="/sites/new" className="btn-primary flex items-center gap-1.5">
             <Plus size={16} /> موقع جديد
           </Link>

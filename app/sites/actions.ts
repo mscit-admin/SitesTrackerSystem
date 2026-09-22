@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deriveLifecycle } from "@/lib/lifecycle";
 import { SECTION_BY_ID, FieldDef } from "@/lib/formSchema";
+import { parseMasterSites, buildSiteData } from "@/lib/importMaster";
 
 function coerce(field: FieldDef, raw: FormDataEntryValue | null): any {
   if (raw === null) return undefined;
@@ -163,4 +164,62 @@ function safeParse(json: string): Record<string, any> {
   } catch {
     return {};
   }
+}
+
+// ---- Update/insert sites from an uploaded GSDN Master workbook ----
+export async function importSitesFromExcel(formData: FormData) {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { ok: false, error: "لم يتم اختيار ملف." };
+  }
+  if (file.size > 15 * 1024 * 1024) {
+    return { ok: false, error: "حجم الملف كبير جداً (الحد الأقصى 15 ميجابايت)." };
+  }
+
+  let rows: any[];
+  try {
+    rows = parseMasterSites(await file.arrayBuffer());
+  } catch (e: any) {
+    return { ok: false, error: e?.message || "تعذّر قراءة الملف. تأكّد أنه بصيغة GSDN Master." };
+  }
+  if (rows.length === 0) {
+    return { ok: false, error: "لم يتم العثور على مواقع في الملف." };
+  }
+
+  let created = 0;
+  let updated = 0;
+  let failed = 0;
+  const errors: string[] = [];
+
+  for (const raw of rows) {
+    try {
+      const { scalars, milestones } = buildSiteData(raw);
+      const existing = await prisma.site.findUnique({
+        where: { siteId: raw.siteId },
+        select: { id: true },
+      });
+      if (existing) {
+        await prisma.$transaction([
+          prisma.site.update({ where: { id: existing.id }, data: scalars }),
+          prisma.milestone.deleteMany({ where: { siteId: existing.id } }),
+          prisma.milestone.createMany({
+            data: milestones.map((m) => ({ ...m, siteId: existing.id })),
+          }),
+        ]);
+        updated++;
+      } else {
+        await prisma.site.create({
+          data: { siteId: raw.siteId, ...scalars, milestones: { create: milestones } },
+        });
+        created++;
+      }
+    } catch (e: any) {
+      failed++;
+      if (errors.length < 5) errors.push(`${raw.siteId}: ${e?.message ?? "خطأ"}`);
+    }
+  }
+
+  revalidatePath("/sites");
+  revalidatePath("/");
+  return { ok: true, total: rows.length, created, updated, failed, errors };
 }
