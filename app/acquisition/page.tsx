@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard } from "@/components/ui";
+import { PaginationBar } from "@/components/PaginationBar";
+import { getSitesPageSize, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { stageBadge, stageLabel } from "@/lib/acquisition";
 import { Plus, Compass } from "lucide-react";
 
@@ -10,16 +12,30 @@ const STATUS_AR: Record<string, string> = {
   OPEN: "مفتوحة", ACQUIRED: "مُستحوَذة", CANCELLED: "ملغاة",
 };
 
-export default async function AcquisitionPage() {
-  const [points, openCount, acquiredCount, candTotal] = await Promise.all([
-    prisma.nominalPoint.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { candidates: { select: { stage: true } } },
-    }),
+export default async function AcquisitionPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const sizeParam = typeof sp.size === "string" ? parseInt(sp.size, 10) : NaN;
+  const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(sizeParam) ? sizeParam : await getSitesPageSize();
+
+  const [total, openCount, acquiredCount, candTotal] = await Promise.all([
+    prisma.nominalPoint.count(),
     prisma.nominalPoint.count({ where: { status: "OPEN" } }),
     prisma.nominalPoint.count({ where: { status: "ACQUIRED" } }),
     prisma.candidateSite.count(),
   ]);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(totalPages, Math.max(1, typeof sp.page === "string" ? parseInt(sp.page, 10) || 1 : 1));
+
+  const points = await prisma.nominalPoint.findMany({
+    orderBy: { createdAt: "desc" },
+    include: { candidates: { select: { stage: true } } },
+    skip: (page - 1) * pageSize,
+    take: pageSize,
+  });
 
   return (
     <div>
@@ -30,7 +46,7 @@ export default async function AcquisitionPage() {
       </PageHeader>
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="نقاط اسمية" value={points.length} tone="brand" icon={Compass} />
+        <StatCard label="نقاط اسمية" value={total} tone="brand" icon={Compass} />
         <StatCard label="مفتوحة" value={openCount} tone="amber" />
         <StatCard label="مُستحوَذة" value={acquiredCount} tone="emerald" />
         <StatCard label="إجمالي المرشّحين" value={candTotal} tone="sky" />
@@ -76,6 +92,8 @@ export default async function AcquisitionPage() {
           </table>
         </div>
       </div>
+
+      <PaginationBar page={page} pageSize={pageSize} total={total} totalPages={totalPages} />
     </div>
   );
 }

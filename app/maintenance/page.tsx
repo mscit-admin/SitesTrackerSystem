@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard, Badge } from "@/components/ui";
 import { NewTicketForm } from "@/components/NewTicketForm";
+import { PaginationBar } from "@/components/PaginationBar";
+import { getSitesPageSize, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { resolveTicket, completePreventive } from "./actions";
 import { fmtDate } from "@/lib/format";
 import { Building2, CalendarClock, Wrench, AlertTriangle } from "lucide-react";
@@ -12,25 +14,50 @@ const PRIORITY_AR: Record<string, string> = {
   CRITICAL: "حرجة", HIGH: "عالية", MEDIUM: "متوسطة", LOW: "منخفضة",
 };
 
-export default async function MaintenancePage() {
-  const [inOperation, pmOverdue, pmDueSoon, openTickets, tickets, opsSites] = await Promise.all([
+export default async function MaintenancePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const def = await getSitesPageSize();
+  const resolveSize = (key: string) => {
+    const n = typeof sp[key] === "string" ? parseInt(sp[key] as string, 10) : NaN;
+    return (PAGE_SIZE_OPTIONS as readonly number[]).includes(n) ? n : def;
+  };
+  const pSize = resolveSize("psize");
+  const tSize = resolveSize("tsize");
+
+  const [inOperation, pmOverdue, pmTotal, openTickets, ticketTotal, opsSites] = await Promise.all([
     prisma.site.count({ where: { isHandedOver: true } }),
     prisma.preventiveMaintenance.count({ where: { status: "OVERDUE" } }),
-    prisma.preventiveMaintenance.findMany({
-      orderBy: { nextDueAt: "asc" },
-      take: 20,
-      include: { site: { select: { id: true, siteId: true, name: true } } },
-    }),
+    prisma.preventiveMaintenance.count(),
     prisma.maintenanceTicket.count({ where: { status: { in: ["OPEN", "IN_PROGRESS"] } } }),
-    prisma.maintenanceTicket.findMany({
-      orderBy: [{ status: "asc" }, { reportedAt: "desc" }],
-      take: 30,
-      include: { site: { select: { id: true, siteId: true, name: true } } },
-    }),
+    prisma.maintenanceTicket.count(),
     prisma.site.findMany({
       where: { isHandedOver: true },
       orderBy: { siteId: "asc" },
       select: { id: true, siteId: true, name: true },
+    }),
+  ]);
+
+  const pPages = Math.max(1, Math.ceil(pmTotal / pSize));
+  const pPage = Math.min(pPages, Math.max(1, typeof sp.ppage === "string" ? parseInt(sp.ppage, 10) || 1 : 1));
+  const tPages = Math.max(1, Math.ceil(ticketTotal / tSize));
+  const tPage = Math.min(tPages, Math.max(1, typeof sp.tpage === "string" ? parseInt(sp.tpage, 10) || 1 : 1));
+
+  const [pmDueSoon, tickets] = await Promise.all([
+    prisma.preventiveMaintenance.findMany({
+      orderBy: { nextDueAt: "asc" },
+      skip: (pPage - 1) * pSize,
+      take: pSize,
+      include: { site: { select: { id: true, siteId: true, name: true } } },
+    }),
+    prisma.maintenanceTicket.findMany({
+      orderBy: [{ status: "asc" }, { reportedAt: "desc" }],
+      skip: (tPage - 1) * tSize,
+      take: tSize,
+      include: { site: { select: { id: true, siteId: true, name: true } } },
     }),
   ]);
 
@@ -45,11 +72,12 @@ export default async function MaintenancePage() {
         <StatCard label="مواقع قيد التشغيل" value={inOperation} tone="emerald" icon={Building2} />
         <StatCard label="صيانة دورية متأخرة" value={pmOverdue} tone="red" icon={AlertTriangle} />
         <StatCard label="بلاغات مفتوحة" value={openTickets} tone="amber" icon={Wrench} />
-        <StatCard label="مهام صيانة مجدولة" value={pmDueSoon.length} tone="sky" icon={CalendarClock} />
+        <StatCard label="مهام صيانة مجدولة" value={pmTotal} tone="sky" icon={CalendarClock} />
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Preventive maintenance */}
+        <div>
         <div className="card overflow-hidden">
           <div className="border-b border-slate-100 p-4">
             <h2 className="text-base font-bold text-slate-800">الصيانة الدورية القادمة</h2>
@@ -90,6 +118,8 @@ export default async function MaintenancePage() {
               </tbody>
             </table>
           </div>
+        </div>
+        <PaginationBar page={pPage} pageSize={pSize} total={pmTotal} totalPages={pPages} pageKey="ppage" sizeKey="psize" />
         </div>
 
         {/* New ticket + tickets list */}
@@ -151,6 +181,8 @@ export default async function MaintenancePage() {
           </table>
         </div>
       </div>
+
+      <PaginationBar page={tPage} pageSize={tSize} total={ticketTotal} totalPages={tPages} pageKey="tpage" sizeKey="tsize" />
     </div>
   );
 }

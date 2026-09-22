@@ -11,7 +11,7 @@ export function PageSizeSetting({ current }: { current: number }) {
   return (
     <div className="card p-5">
       <h2 className="text-base font-semibold text-gray-900">إعدادات العرض</h2>
-      <p className="mt-0.5 text-xs text-gray-500">العدد الافتراضي للصفوف في قائمة المواقع (يمكن تغييره مؤقتاً من شاشة المواقع).</p>
+      <p className="mt-0.5 text-xs text-gray-500">العدد الافتراضي للصفوف في جميع القوائم (المواقع، الاستحواذ، المخاطر، الصيانة) — يمكن تغييره مؤقتاً من كل شاشة.</p>
 
       <form
         action={async (fd) => {

@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard, Badge } from "@/components/ui";
+import { PaginationBar } from "@/components/PaginationBar";
+import { getSitesPageSize, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { fmtNum } from "@/lib/format";
 import { ShieldAlert, ShieldX, Shield, ShieldCheck } from "lucide-react";
 
@@ -12,19 +14,31 @@ const TREND_AR: Record<string, string> = {
   Decreasing: "▼ متناقص",
 };
 
-export default async function RisksPage() {
-  const risks = await prisma.risk.findMany();
-  risks.sort(
+export default async function RisksPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const all = await prisma.risk.findMany();
+  all.sort(
     (a, b) =>
       (LEVEL_ORDER[a.level ?? ""] ?? 9) - (LEVEL_ORDER[b.level ?? ""] ?? 9) ||
       (b.score ?? 0) - (a.score ?? 0)
   );
 
-  const count = (l: string) => risks.filter((r) => r.level === l).length;
+  const count = (l: string) => all.filter((r) => r.level === l).length;
+
+  const sizeParam = typeof sp.size === "string" ? parseInt(sp.size, 10) : NaN;
+  const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(sizeParam) ? sizeParam : await getSitesPageSize();
+  const total = all.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const page = Math.min(totalPages, Math.max(1, typeof sp.page === "string" ? parseInt(sp.page, 10) || 1 : 1));
+  const risks = all.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div>
-      <PageHeader title="سجل المخاطر" subtitle={`${risks.length} مخاطرة مسجّلة`} />
+      <PageHeader title="سجل المخاطر" subtitle={`${total} مخاطرة مسجّلة`} />
 
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="حرجة" value={count("Critical")} tone="red" icon={ShieldX} />
@@ -74,6 +88,8 @@ export default async function RisksPage() {
           </table>
         </div>
       </div>
+
+      <PaginationBar page={page} pageSize={pageSize} total={total} totalPages={totalPages} />
     </div>
   );
 }

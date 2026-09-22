@@ -9,11 +9,15 @@ export function PaginationBar({
   pageSize,
   total,
   totalPages,
+  pageKey = "page",
+  sizeKey = "size",
 }: {
   page: number;
   pageSize: number;
   total: number;
   totalPages: number;
+  pageKey?: string;
+  sizeKey?: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -25,7 +29,7 @@ export function PaginationBar({
       if (v === null) q.delete(k);
       else q.set(k, v);
     }
-    router.push(`${pathname}?${q.toString()}`);
+    router.push(`${pathname}?${q.toString()}`, { scroll: false });
   }
 
   const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
@@ -37,7 +41,7 @@ export function PaginationBar({
         <span className="text-xs text-gray-500">عدد الصفوف:</span>
         <select
           value={String(pageSize)}
-          onChange={(e) => go({ size: e.target.value, page: "1" })}
+          onChange={(e) => go({ [sizeKey]: e.target.value, [pageKey]: "1" })}
           className="field py-1.5"
         >
           {PAGE_SIZE_OPTIONS.map((n) => (
@@ -51,7 +55,7 @@ export function PaginationBar({
 
       <div className="flex items-center gap-1.5">
         <button
-          onClick={() => go({ page: String(page - 1) })}
+          onClick={() => go({ [pageKey]: String(page - 1) })}
           disabled={page <= 1}
           className="btn-ghost flex items-center gap-1 disabled:opacity-40"
         >
@@ -59,7 +63,7 @@ export function PaginationBar({
         </button>
         <span className="px-2 text-xs tabular-nums text-gray-500">صفحة {page} من {totalPages}</span>
         <button
-          onClick={() => go({ page: String(page + 1) })}
+          onClick={() => go({ [pageKey]: String(page + 1) })}
           disabled={page >= totalPages}
           className="btn-ghost flex items-center gap-1 disabled:opacity-40"
         >
