@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { getSites, getFilterOptions, getSitesPageSize, SiteFilters, PAGE_SIZE_OPTIONS } from "@/lib/queries";
+import { getSites, getFilterOptions, getSitesPageSize, openDeletionIdSet, SiteFilters, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { PageHeader, Badge, ProgressBar } from "@/components/ui";
 import { SitesFilterBar } from "@/components/SitesFilterBar";
 import { PaginationBar } from "@/components/PaginationBar";
@@ -32,10 +32,11 @@ export default async function SitesPage({
     : await getSitesPageSize();
   const page = Math.max(1, typeof sp.page === "string" ? parseInt(sp.page, 10) || 1 : 1);
 
-  const [result, options, pendingDeletions] = await Promise.all([
+  const [result, options, pendingDeletions, delSet] = await Promise.all([
     getSites(filters, page, pageSize),
     getFilterOptions(),
-    prisma.siteDeletionRequest.count({ where: { status: { in: ["PENDING", "PHASE_APPROVED"] } } }),
+    prisma.deletionRequest.count({ where: { status: { in: ["PENDING", "PHASE_APPROVED"] } } }),
+    openDeletionIdSet("SITE"),
   ]);
   const sites = result.rows;
 
@@ -52,7 +53,7 @@ export default async function SitesPage({
             <Download size={16} /> تحميل ملف الإكسل
           </a>
           <ImportExcelButton />
-          <Link href="/sites/deletions" className="btn-ghost flex items-center gap-1.5" title="طلبات حذف المواقع">
+          <Link href="/deletions" className="btn-ghost flex items-center gap-1.5" title="طلبات الحذف">
             <Trash2 size={16} /> طلبات الحذف
             {pendingDeletions > 0 && (
               <span className="chip bg-red-100 text-red-700 border-red-200">{pendingDeletions}</span>
@@ -102,7 +103,7 @@ export default async function SitesPage({
                   <td className="td"><ProgressBar pct={s.progressPct} /></td>
                   <td className="td text-xs text-slate-500">{fmtDate(s.onairDate)}</td>
                   <td className="td text-center">
-                    {s.pendingDeletion ? (
+                    {delSet.has(s.id) ? (
                       <span className="chip bg-red-50 text-red-700 border-red-100">قيد الحذف</span>
                     ) : s._count.issues > 0 ? (
                       <span className="chip bg-red-100 text-red-700 border-red-200">{s._count.issues}</span>
@@ -111,7 +112,15 @@ export default async function SitesPage({
                     )}
                   </td>
                   <td className="td">
-                    <RowActions siteId={s.id} siteCode={s.siteId} pendingDeletion={s.pendingDeletion} />
+                    <RowActions
+                      entityType="SITE"
+                      entityId={s.id}
+                      label={s.siteId}
+                      sublabel={s.name ?? undefined}
+                      viewHref={`/sites/${s.id}`}
+                      editHref={`/sites/${s.id}/edit`}
+                      pending={delSet.has(s.id)}
+                    />
                   </td>
                 </tr>
               ))}

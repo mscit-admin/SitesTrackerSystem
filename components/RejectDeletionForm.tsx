@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import { rejectDeletion } from "@/app/sites/actions";
+import { rejectDeletion } from "@/app/actions/deletion";
 
 export function RejectDeletionForm({ id, stage }: { id: string; stage: string }) {
   const [open, setOpen] = useState(false);

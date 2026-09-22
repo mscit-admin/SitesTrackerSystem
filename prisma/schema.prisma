@@ -54,7 +54,6 @@ model Site {
   isOnair       Boolean @default(false)
   isHandedOver  Boolean @default(false)
   overallStatus String  @default("IN_PROGRESS") // NOT_STARTED / IN_PROGRESS / ONAIR / HANDED_OVER / IN_OPERATION / BLOCKED
-  pendingDeletion Boolean @default(false) // a two-step deletion request is open
 
   // ---- Key denormalised dates for quick listing/sorting ----
   rfSurveyDate  DateTime?
@@ -285,16 +284,17 @@ model AppSetting {
   value String
 }
 
-/// A request to delete a site — requires phase-manager then project-manager
-/// approval before the site is actually removed. Kept as an audit record even
-/// after the site is deleted (siteId cleared, code/name snapshot retained).
-model SiteDeletionRequest {
-  id        String  @id @default(cuid())
-  siteId    String?
-  siteCode  String
-  siteName  String?
-  reason    String
-  status    String  @default("PENDING") // PENDING / PHASE_APPROVED / APPROVED / REJECTED / COMPLETED
+/// A request to delete any record — requires phase-manager then project-manager
+/// approval before the record is actually removed. Kept as an audit record even
+/// after deletion (entityId cleared, label snapshot retained).
+model DeletionRequest {
+  id         String  @id @default(cuid())
+  entityType String  // SITE / NOMINAL_POINT / RISK / MAINTENANCE_TICKET / PREVENTIVE
+  entityId   String?
+  label      String  // snapshot code/title for display
+  sublabel   String? // snapshot secondary text
+  reason     String
+  status     String  @default("PENDING") // PENDING / PHASE_APPROVED / REJECTED / COMPLETED
   requestedBy String?
 
   phaseApprovedAt DateTime?
@@ -309,6 +309,8 @@ model SiteDeletionRequest {
   updatedAt DateTime @updatedAt
 
   @@index([status])
+  @@index([entityType])
+  @@index([entityId])
 }
 
 /// Settings catalogue — equipment type (managed from the Settings screen).

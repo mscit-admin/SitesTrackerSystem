@@ -22,7 +22,7 @@ echo "→ Installing dependencies (npm ci)…"
 npm ci
 
 echo "→ Syncing database schema…"
-npx prisma db push
+npx prisma db push --accept-data-loss
 
 echo "→ Building…"
 rm -rf .next

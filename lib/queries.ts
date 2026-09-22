@@ -104,6 +104,15 @@ export interface SiteFilters {
 export const PAGE_SIZE_OPTIONS = [10, 15, 25] as const;
 export const DEFAULT_PAGE_SIZE = 15;
 
+/** Set of entityIds (of a given type) that have an open deletion request. */
+export async function openDeletionIdSet(entityType: string): Promise<Set<string>> {
+  const rows = await prisma.deletionRequest.findMany({
+    where: { entityType, status: { in: ["PENDING", "PHASE_APPROVED"] } },
+    select: { entityId: true },
+  });
+  return new Set(rows.map((r) => r.entityId).filter((x): x is string => !!x));
+}
+
 export async function getSitesPageSize(): Promise<number> {
   const row = await prisma.appSetting.findUnique({ where: { key: "sitesPageSize" } });
   const n = row ? parseInt(row.value, 10) : NaN;
@@ -144,7 +153,6 @@ export async function getSites(filters: SiteFilters, page = 1, pageSize = DEFAUL
         overallStatus: true,
         progressPct: true,
         onairDate: true,
-        pendingDeletion: true,
         _count: { select: { issues: { where: { status: "OPEN" } } } },
       },
     }),

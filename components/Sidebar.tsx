@@ -9,6 +9,7 @@ import {
   ShieldAlert,
   Compass,
   Settings,
+  Trash2,
   type LucideIcon,
 } from "lucide-react";
 
@@ -18,6 +19,7 @@ const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/sites", label: "المواقع", icon: Antenna },
   { href: "/maintenance", label: "التشغيل والصيانة", icon: Wrench },
   { href: "/risks", label: "سجل المخاطر", icon: ShieldAlert },
+  { href: "/deletions", label: "طلبات الحذف", icon: Trash2 },
   { href: "/settings", label: "الإعدادات", icon: Settings },
 ];
 

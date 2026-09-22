@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard, Badge } from "@/components/ui";
 import { PaginationBar } from "@/components/PaginationBar";
-import { getSitesPageSize, PAGE_SIZE_OPTIONS } from "@/lib/queries";
+import { RowActions } from "@/components/RowActions";
+import { getSitesPageSize, openDeletionIdSet, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { fmtNum } from "@/lib/format";
 import { ShieldAlert, ShieldX, Shield, ShieldCheck } from "lucide-react";
 
@@ -20,7 +21,7 @@ export default async function RisksPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const sp = await searchParams;
-  const all = await prisma.risk.findMany();
+  const [all, delSet] = await Promise.all([prisma.risk.findMany(), openDeletionIdSet("RISK")]);
   all.sort(
     (a, b) =>
       (LEVEL_ORDER[a.level ?? ""] ?? 9) - (LEVEL_ORDER[b.level ?? ""] ?? 9) ||
@@ -62,6 +63,7 @@ export default async function RisksPage({
                 <th className="th">المستوى</th>
                 <th className="th">الاتجاه</th>
                 <th className="th">صاحب الإجراء</th>
+                <th className="th"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -81,7 +83,10 @@ export default async function RisksPage({
                   <td className="td text-center font-bold">{fmtNum(r.score)}</td>
                   <td className="td"><Badge status={r.level ?? "Low"} label={r.level ?? "—"} /></td>
                   <td className="td text-xs">{TREND_AR[r.trend ?? ""] ?? r.trend ?? "—"}</td>
-                  <td className="td text-xs">{r.actionOwner ?? "—"}</td>
+                  <td className="td text-xs">{delSet.has(String(r.id)) ? <span className="chip bg-red-50 text-red-700 border-red-100">قيد الحذف</span> : (r.actionOwner ?? "—")}</td>
+                  <td className="td">
+                    <RowActions entityType="RISK" entityId={String(r.id)} label={r.riskId} sublabel={r.statement} pending={delSet.has(String(r.id))} />
+                  </td>
                 </tr>
               ))}
             </tbody>

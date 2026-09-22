@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard } from "@/components/ui";
 import { PaginationBar } from "@/components/PaginationBar";
-import { getSitesPageSize, PAGE_SIZE_OPTIONS } from "@/lib/queries";
+import { RowActions } from "@/components/RowActions";
+import { getSitesPageSize, openDeletionIdSet, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { stageBadge, stageLabel } from "@/lib/acquisition";
 import { Plus, Compass } from "lucide-react";
 
@@ -30,12 +31,15 @@ export default async function AcquisitionPage({
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const page = Math.min(totalPages, Math.max(1, typeof sp.page === "string" ? parseInt(sp.page, 10) || 1 : 1));
 
-  const points = await prisma.nominalPoint.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { candidates: { select: { stage: true } } },
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  });
+  const [points, delSet] = await Promise.all([
+    prisma.nominalPoint.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { candidates: { select: { stage: true } } },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    openDeletionIdSet("NOMINAL_POINT"),
+  ]);
 
   return (
     <div>
@@ -63,11 +67,12 @@ export default async function AcquisitionPage({
                 <th className="th">المرشّحون</th>
                 <th className="th">أعلى مرحلة</th>
                 <th className="th">الحالة</th>
+                <th className="th"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {points.length === 0 && (
-                <tr><td colSpan={6} className="td py-10 text-center text-gray-400">لا توجد نقاط اسمية بعد. ابدأ بإضافة نقطة.</td></tr>
+                <tr><td colSpan={7} className="td py-10 text-center text-gray-400">لا توجد نقاط اسمية بعد. ابدأ بإضافة نقطة.</td></tr>
               )}
               {points.map((p) => {
                 const top = topStage(p.candidates.map((c) => c.stage));
@@ -82,8 +87,18 @@ export default async function AcquisitionPage({
                     <td className="td">{top ? <span className={`chip ${stageBadge(top)}`}>{stageLabel(top)}</span> : "—"}</td>
                     <td className="td">
                       <span className={`chip ${p.status === "ACQUIRED" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
-                        {STATUS_AR[p.status] ?? p.status}
+                        {delSet.has(p.id) ? "قيد الحذف" : STATUS_AR[p.status] ?? p.status}
                       </span>
+                    </td>
+                    <td className="td">
+                      <RowActions
+                        entityType="NOMINAL_POINT"
+                        entityId={p.id}
+                        label={p.ref}
+                        sublabel={p.name ?? undefined}
+                        viewHref={`/acquisition/${p.id}`}
+                        pending={delSet.has(p.id)}
+                      />
                     </td>
                   </tr>
                 );

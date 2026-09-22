@@ -4,16 +4,24 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { MoreVertical, Eye, Pencil, Trash2, X, AlertTriangle } from "lucide-react";
-import { createDeletionRequest } from "@/app/sites/actions";
+import { requestDeletion } from "@/app/actions/deletion";
 
 export function RowActions({
-  siteId,
-  siteCode,
-  pendingDeletion,
+  entityType,
+  entityId,
+  label,
+  sublabel,
+  viewHref,
+  editHref,
+  pending,
 }: {
-  siteId: string;
-  siteCode: string;
-  pendingDeletion: boolean;
+  entityType: string;
+  entityId: string;
+  label: string;
+  sublabel?: string;
+  viewHref?: string;
+  editHref?: string;
+  pending: boolean;
 }) {
   const router = useRouter();
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -71,18 +79,22 @@ export function RowActions({
           className="fixed z-50 w-44 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-pop"
           style={{ top: pos!.top, left: pos!.left }}
         >
-          <Link href={`/sites/${siteId}`} className={`${item} text-gray-700`} onClick={() => setPos(null)}>
-            <Eye size={15} className="text-gray-400" /> عرض الموقع
-          </Link>
-          <Link href={`/sites/${siteId}/edit`} className={`${item} text-gray-700`} onClick={() => setPos(null)}>
-            <Pencil size={15} className="text-gray-400" /> تعديل
-          </Link>
+          {viewHref && (
+            <Link href={viewHref} className={`${item} text-gray-700`} onClick={() => setPos(null)}>
+              <Eye size={15} className="text-gray-400" /> عرض
+            </Link>
+          )}
+          {editHref && (
+            <Link href={editHref} className={`${item} text-gray-700`} onClick={() => setPos(null)}>
+              <Pencil size={15} className="text-gray-400" /> تعديل
+            </Link>
+          )}
           <button
-            disabled={pendingDeletion}
+            disabled={pending}
             onClick={() => { setPos(null); setModal(true); setError(null); }}
             className={`${item} text-red-600 disabled:cursor-not-allowed disabled:text-gray-300`}
           >
-            <Trash2 size={15} /> {pendingDeletion ? "طلب حذف قائم" : "حذف"}
+            <Trash2 size={15} /> {pending ? "طلب حذف قائم" : "حذف"}
           </button>
         </div>
       )}
@@ -91,7 +103,7 @@ export function RowActions({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={(e) => { if (e.target === e.currentTarget && !busy) setModal(false); }}>
           <div className="w-full max-w-md rounded-lg bg-white shadow-pop" dir="rtl">
             <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
-              <h3 className="flex items-center gap-1.5 text-sm font-semibold text-red-700"><AlertTriangle size={16} /> طلب حذف الموقع {siteCode}</h3>
+              <h3 className="flex items-center gap-1.5 text-sm font-semibold text-red-700"><AlertTriangle size={16} /> طلب حذف: {label}</h3>
               <button onClick={() => setModal(false)} disabled={busy} className="text-gray-400 hover:text-gray-700"><X size={18} /></button>
             </div>
             <form
@@ -100,8 +112,11 @@ export function RowActions({
                 setBusy(true);
                 setError(null);
                 const fd = new FormData(e.currentTarget as HTMLFormElement);
-                fd.set("siteId", siteId);
-                const r = await createDeletionRequest(fd);
+                fd.set("entityType", entityType);
+                fd.set("entityId", entityId);
+                fd.set("label", label);
+                if (sublabel) fd.set("sublabel", sublabel);
+                const r = await requestDeletion(fd);
                 setBusy(false);
                 if (r?.ok) { setModal(false); router.refresh(); }
                 else setError(r?.error ?? "تعذّر إرسال الطلب");
@@ -109,7 +124,7 @@ export function RowActions({
               className="space-y-3 p-4"
             >
               <p className="rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800">
-                لن يُحذف الموقع مباشرةً. يتطلب الحذف موافقة <b>مسؤول المرحلة</b> ثم <b>مدير المشروع</b>.
+                لن يُحذف العنصر مباشرةً. يتطلب الحذف موافقة <b>مسؤول المرحلة</b> ثم <b>مدير المشروع</b>.
               </p>
               <div>
                 <label className="mb-1 block text-xs font-medium text-gray-600">سبب الحذف (إلزامي)</label>

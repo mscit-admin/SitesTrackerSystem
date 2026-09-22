@@ -3,7 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { PageHeader, StatCard, Badge } from "@/components/ui";
 import { NewTicketForm } from "@/components/NewTicketForm";
 import { PaginationBar } from "@/components/PaginationBar";
-import { getSitesPageSize, PAGE_SIZE_OPTIONS } from "@/lib/queries";
+import { RowActions } from "@/components/RowActions";
+import { getSitesPageSize, openDeletionIdSet, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { resolveTicket, completePreventive } from "./actions";
 import { fmtDate } from "@/lib/format";
 import { Building2, CalendarClock, Wrench, AlertTriangle } from "lucide-react";
@@ -46,7 +47,7 @@ export default async function MaintenancePage({
   const tPages = Math.max(1, Math.ceil(ticketTotal / tSize));
   const tPage = Math.min(tPages, Math.max(1, typeof sp.tpage === "string" ? parseInt(sp.tpage, 10) || 1 : 1));
 
-  const [pmDueSoon, tickets] = await Promise.all([
+  const [pmDueSoon, tickets, pmDelSet, tkDelSet] = await Promise.all([
     prisma.preventiveMaintenance.findMany({
       orderBy: { nextDueAt: "asc" },
       skip: (pPage - 1) * pSize,
@@ -59,6 +60,8 @@ export default async function MaintenancePage({
       take: tSize,
       include: { site: { select: { id: true, siteId: true, name: true } } },
     }),
+    openDeletionIdSet("PREVENTIVE"),
+    openDeletionIdSet("MAINTENANCE_TICKET"),
   ]);
 
   return (
@@ -108,10 +111,20 @@ export default async function MaintenancePage({
                       </span>
                     </td>
                     <td className="td">
-                      <form action={completePreventive}>
-                        <input type="hidden" name="id" value={t.id} />
-                        <button className="text-xs text-emerald-600 hover:underline">إنجاز</button>
-                      </form>
+                      <div className="flex items-center gap-2">
+                        <form action={completePreventive}>
+                          <input type="hidden" name="id" value={t.id} />
+                          <button className="text-xs text-emerald-600 hover:underline">إنجاز</button>
+                        </form>
+                        <RowActions
+                          entityType="PREVENTIVE"
+                          entityId={String(t.id)}
+                          label={t.taskType}
+                          sublabel={t.site.siteId}
+                          viewHref={`/sites/${t.site.id}`}
+                          pending={pmDelSet.has(String(t.id))}
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -168,12 +181,22 @@ export default async function MaintenancePage({
                   </td>
                   <td className="td text-xs text-slate-500">{fmtDate(tk.reportedAt)}</td>
                   <td className="td">
-                    {(tk.status === "OPEN" || tk.status === "IN_PROGRESS") && (
-                      <form action={resolveTicket}>
-                        <input type="hidden" name="id" value={tk.id} />
-                        <button className="text-xs text-emerald-600 hover:underline">حل البلاغ</button>
-                      </form>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {(tk.status === "OPEN" || tk.status === "IN_PROGRESS") && (
+                        <form action={resolveTicket}>
+                          <input type="hidden" name="id" value={tk.id} />
+                          <button className="text-xs text-emerald-600 hover:underline">حل البلاغ</button>
+                        </form>
+                      )}
+                      <RowActions
+                        entityType="MAINTENANCE_TICKET"
+                        entityId={String(tk.id)}
+                        label={tk.title}
+                        sublabel={tk.site.siteId}
+                        viewHref={`/sites/${tk.site.id}`}
+                        pending={tkDelSet.has(String(tk.id))}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}
