@@ -77,6 +77,69 @@ export async function addCandidate(fd: FormData) {
   return { ok: true };
 }
 
+// ---- Edit existing records (pre-filled forms, no re-entry) ----
+export async function updateNominalPoint(fd: FormData) {
+  const id = str(fd, "id");
+  if (!id) return { ok: false, error: "نقطة غير معروفة" };
+  await prisma.nominalPoint.update({
+    where: { id },
+    data: {
+      name: str(fd, "name"),
+      latitude: num(fd, "latitude"),
+      longitude: num(fd, "longitude"),
+      region: str(fd, "region"),
+      notes: str(fd, "notes"),
+    },
+  });
+  revalidateAcq(id);
+  return { ok: true };
+}
+
+export async function updateCandidate(fd: FormData) {
+  const id = str(fd, "candidateId");
+  if (!id) return { ok: false, error: "مرشّح غير معروف" };
+  const towerOwner = str(fd, "towerOwner");
+  const c = await prisma.candidateSite.update({
+    where: { id },
+    data: {
+      name: str(fd, "name"),
+      latitude: num(fd, "latitude"),
+      longitude: num(fd, "longitude"),
+      proximityKm: num(fd, "proximityKm"),
+      fiberAvailable: str(fd, "fiberAvailable"),
+      easeOfProcedures: str(fd, "easeOfProcedures"),
+      towerOwner,
+      towerOwnerDetail: str(fd, "towerOwnerDetail"),
+      ownerType: ownerTypeOf(towerOwner),
+      contactPerson: str(fd, "contactPerson"),
+      contactPhone: str(fd, "contactPhone"),
+      address: str(fd, "address"),
+    },
+    select: { nominalPointId: true },
+  });
+  revalidateAcq(c.nominalPointId);
+  return { ok: true };
+}
+
+// Edit survey data WITHOUT changing the workflow stage.
+export async function updateSurvey(fd: FormData) {
+  const id = str(fd, "candidateId");
+  if (!id) return { ok: false, error: "مرشّح غير معروف" };
+  const c = await prisma.candidateSite.update({
+    where: { id },
+    data: {
+      surveyDate: date(fd, "surveyDate"),
+      towerInfo: str(fd, "towerInfo"),
+      requiredHeights: str(fd, "requiredHeights"),
+      proposedEquipment: str(fd, "proposedEquipment"),
+      installationReq: str(fd, "installationReq"),
+    },
+    select: { nominalPointId: true },
+  });
+  revalidateAcq(c.nominalPointId);
+  return { ok: true };
+}
+
 async function setStage(
   candidateId: string,
   stage: string,

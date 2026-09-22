@@ -2,7 +2,8 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { Check, X, ArrowLeft, Plus, Trash2, Boxes } from "lucide-react";
+import { Check, X, ArrowLeft, Plus, Trash2, Boxes, Pencil } from "lucide-react";
+import { CandidateForm } from "@/components/CandidateForm";
 import {
   primaryAction,
   canReject,
@@ -23,6 +24,7 @@ import {
   convertToSite,
   addCandidateEquipment,
   removeCandidateEquipment,
+  updateSurvey,
 } from "@/app/acquisition/actions";
 
 type EquipLine = { id: string; equipmentType: string; manufacturer: string | null; quantity: number };
@@ -46,6 +48,9 @@ type Cand = {
   requiredHeights: string | null;
   proposedEquipment: string | null;
   installationReq: string | null;
+  approvedHeights: string | null;
+  approvedEquipment: string | null;
+  finalDocs: string | null;
   stage: string;
   rejectionReason: string | null;
   rejectionGate: string | null;
@@ -68,7 +73,7 @@ export function CandidateCard({
   equipmentTypes?: string[];
   manufacturers?: string[];
 }) {
-  const [open, setOpen] = useState<null | "survey" | "final" | "convert" | "reject">(null);
+  const [open, setOpen] = useState<null | "survey" | "final" | "convert" | "reject" | "edit" | "editsurvey">(null);
   const [error, setError] = useState<string | null>(null);
   const action = primaryAction(c.stage);
   const isSector = ownerTypeOf(c.towerOwner) === "SECTOR";
@@ -85,8 +90,26 @@ export function CandidateCard({
             {isSector && <span className="mr-1 text-emerald-600"> · شركة قطاع (أولوية)</span>}
           </div>
         </div>
-        <span className={`chip ${stageBadge(c.stage)}`}>{stageLabel(c.stage)}</span>
+        <div className="flex items-center gap-2">
+          <span className={`chip ${stageBadge(c.stage)}`}>{stageLabel(c.stage)}</span>
+          {c.stage !== "ACQUIRED" && (
+            <button
+              onClick={() => setOpen(open === "edit" ? null : "edit")}
+              title="تعديل بيانات المرشّح"
+              className="text-gray-400 hover:text-brand"
+            >
+              <Pencil size={15} />
+            </button>
+          )}
+        </div>
       </div>
+
+      {open === "edit" && (
+        <div className="mt-3 rounded-md border border-gray-200 bg-gray-50/60 p-3">
+          <div className="mb-2 text-sm font-semibold text-gray-800">تعديل بيانات المرشّح</div>
+          <CandidateForm candidate={c as any} onDone={() => setOpen(null)} />
+        </div>
+      )}
 
       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 md:grid-cols-4">
         <Info label="القرب" value={c.proximityKm != null ? `${c.proximityKm} كم` : "—"} />
@@ -101,11 +124,26 @@ export function CandidateCard({
 
       {c.surveyDate && (
         <div className="mt-3 rounded-md border border-gray-100 bg-gray-50 p-2 text-xs text-gray-600">
-          <span className="font-medium text-gray-700">نتائج المسح ({c.surveyDate}): </span>
-          {[c.towerInfo, c.requiredHeights && `ارتفاعات: ${c.requiredHeights}`, c.proposedEquipment && `معدات: ${c.proposedEquipment}`]
-            .filter(Boolean)
-            .join(" · ") || "مسجّلة"}
+          <div className="flex items-start justify-between gap-2">
+            <div>
+              <span className="font-medium text-gray-700">نتائج المسح ({c.surveyDate}): </span>
+              {[c.towerInfo, c.requiredHeights && `ارتفاعات: ${c.requiredHeights}`, c.proposedEquipment && `معدات: ${c.proposedEquipment}`]
+                .filter(Boolean)
+                .join(" · ") || "مسجّلة"}
+            </div>
+            {c.stage !== "ACQUIRED" && (
+              <button onClick={() => setOpen(open === "editsurvey" ? null : "editsurvey")} className="shrink-0 text-brand hover:underline">
+                تعديل
+              </button>
+            )}
+          </div>
         </div>
+      )}
+
+      {open === "editsurvey" && (
+        <InlineForm onClose={() => setOpen(null)} action={updateSurvey} candidateId={c.id} title="تعديل بيانات المسح">
+          {surveyFields(c)}
+        </InlineForm>
       )}
 
       {c.stage === "REJECTED" && (
@@ -161,15 +199,7 @@ export function CandidateCard({
       {/* Inline forms */}
       {open === "survey" && (
         <InlineForm onClose={() => setOpen(null)} action={recordSurvey} candidateId={c.id} title="تسجيل نتائج المسح الميداني">
-          <FieldRow>
-            <L label="تاريخ المسح"><input name="surveyDate" type="date" className="field w-full" /></L>
-            <L label="معلومات البرج"><input name="towerInfo" className="field w-full" /></L>
-          </FieldRow>
-          <FieldRow>
-            <L label="الارتفاعات المطلوبة"><input name="requiredHeights" className="field w-full" /></L>
-            <L label="المعدات المقترحة"><input name="proposedEquipment" className="field w-full" /></L>
-          </FieldRow>
-          <L label="متطلبات التركيب"><input name="installationReq" className="field w-full" /></L>
+          {surveyFields(c)}
         </InlineForm>
       )}
 
@@ -177,11 +207,11 @@ export function CandidateCard({
         <InlineForm onClose={() => setOpen(null)} action={approveFinal} candidateId={c.id} title="الاعتماد النهائي (مالك البرج)">
           <FieldRow>
             <L label="العنوان المعتمد"><input name="address" defaultValue={c.address ?? ""} className="field w-full" /></L>
-            <L label="الارتفاعات المعتمدة"><input name="approvedHeights" className="field w-full" /></L>
+            <L label="الارتفاعات المعتمدة"><input name="approvedHeights" defaultValue={c.approvedHeights ?? c.requiredHeights ?? ""} className="field w-full" /></L>
           </FieldRow>
           <FieldRow>
-            <L label="المعدات المعتمدة"><input name="approvedEquipment" className="field w-full" /></L>
-            <L label="الوثائق"><input name="finalDocs" className="field w-full" /></L>
+            <L label="المعدات المعتمدة"><input name="approvedEquipment" defaultValue={c.approvedEquipment ?? c.proposedEquipment ?? ""} className="field w-full" /></L>
+            <L label="الوثائق"><input name="finalDocs" defaultValue={c.finalDocs ?? ""} className="field w-full" /></L>
           </FieldRow>
         </InlineForm>
       )}
@@ -296,6 +326,22 @@ function EquipmentSection({
         )
       )}
     </div>
+  );
+}
+
+function surveyFields(c: Cand) {
+  return (
+    <>
+      <FieldRow>
+        <L label="تاريخ المسح"><input name="surveyDate" type="date" defaultValue={c.surveyDate ?? ""} className="field w-full" /></L>
+        <L label="معلومات البرج"><input name="towerInfo" defaultValue={c.towerInfo ?? ""} className="field w-full" /></L>
+      </FieldRow>
+      <FieldRow>
+        <L label="الارتفاعات المطلوبة"><input name="requiredHeights" defaultValue={c.requiredHeights ?? ""} className="field w-full" /></L>
+        <L label="المعدات المقترحة"><input name="proposedEquipment" defaultValue={c.proposedEquipment ?? ""} className="field w-full" /></L>
+      </FieldRow>
+      <L label="متطلبات التركيب"><input name="installationReq" defaultValue={c.installationReq ?? ""} className="field w-full" /></L>
+    </>
   );
 }
 

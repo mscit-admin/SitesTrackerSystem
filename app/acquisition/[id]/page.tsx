@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CandidateForm } from "@/components/CandidateForm";
 import { CandidateCard } from "@/components/CandidateCard";
+import { NominalPointEdit } from "@/components/NominalPointEdit";
 
 export const dynamic = "force-dynamic";
 
@@ -69,6 +70,9 @@ export default async function NominalPointDetailPage({
           <span className={`chip ${np.status === "ACQUIRED" ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-gray-100 text-gray-600 border-gray-200"}`}>
             {STATUS_AR[np.status] ?? np.status}
           </span>
+        </div>
+        <div className="mt-3">
+          <NominalPointEdit np={{ id: np.id, ref: np.ref, name: np.name, latitude: np.latitude, longitude: np.longitude, region: np.region, notes: np.notes }} />
         </div>
       </div>
 
