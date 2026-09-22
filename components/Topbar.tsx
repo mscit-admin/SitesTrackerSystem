@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const LABELS: Record<string, string> = {
   "": "لوحة المؤشرات",
+  acquisition: "الاستحواذ",
   sites: "المواقع",
   maintenance: "التشغيل والصيانة",
   risks: "سجل المخاطر",

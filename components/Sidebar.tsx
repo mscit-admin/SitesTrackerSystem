@@ -7,11 +7,13 @@ import {
   Antenna,
   Wrench,
   ShieldAlert,
+  Compass,
   type LucideIcon,
 } from "lucide-react";
 
 const NAV: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/", label: "لوحة المؤشرات", icon: LayoutDashboard },
+  { href: "/acquisition", label: "الاستحواذ", icon: Compass },
   { href: "/sites", label: "المواقع", icon: Antenna },
   { href: "/maintenance", label: "التشغيل والصيانة", icon: Wrench },
   { href: "/risks", label: "سجل المخاطر", icon: ShieldAlert },

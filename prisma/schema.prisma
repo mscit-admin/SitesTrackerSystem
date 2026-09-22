@@ -200,3 +200,78 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+/// Acquisition — a nominal point defined by the executor (AT Globe).
+model NominalPoint {
+  id        String  @id @default(cuid())
+  ref       String  @unique // reference/code
+  name      String?
+  latitude  Float?
+  longitude Float?
+  region    String?
+  status    String  @default("OPEN") // OPEN / ACQUIRED / CANCELLED
+  notes     String?
+
+  candidates CandidateSite[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+}
+
+/// Acquisition — a candidate site (1..3 per nominal point) moving through the
+/// four approval gates until acquired and converted into a Site.
+model CandidateSite {
+  id             String       @id @default(cuid())
+  nominalPoint   NominalPoint @relation(fields: [nominalPointId], references: [id], onDelete: Cascade)
+  nominalPointId String
+
+  name      String?
+  latitude  Float?
+  longitude Float?
+
+  // Selection criteria (step 2)
+  proximityKm       Float?
+  fiberAvailable    String? // Yes / No / Partial
+  easeOfProcedures  String? // High / Medium / Low
+
+  // Tower owner (from the fixed list; SECTOR companies are prioritised)
+  towerOwner       String? // Almadar / Albounya / Libyana / LTT / Citizen / Other
+  towerOwnerDetail String? // required when Other
+  ownerType        String? // SECTOR / CITIZEN / OTHER (derived)
+  contactPerson    String?
+  contactPhone     String?
+  address          String?
+
+  // Survey results (step 4.2 / 4.3)
+  surveyDate       DateTime?
+  towerInfo        String?
+  requiredHeights  String?
+  proposedEquipment String?
+  installationReq  String?
+
+  // Final package / approved data (steps 5-6)
+  approvedHeights   String?
+  approvedEquipment String?
+  finalDocs         String?
+
+  // Workflow
+  stage           String    @default("SUBMITTED")
+  // SUBMITTED -> APPROVED_CANDIDATE -> SURVEY_REQUESTED -> SURVEY_APPROVED
+  // -> SURVEYED -> TECH_APPROVED -> FINAL_APPROVED -> ACQUIRED ; or REJECTED
+  candidateApprovedAt DateTime?
+  surveyPermittedAt   DateTime?
+  techApprovedAt      DateTime?
+  finalApprovedAt     DateTime?
+  rejectionGate       String?
+  rejectionReason     String?
+
+  linkedSiteId String? // Site.id once converted
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([stage])
+  @@index([nominalPointId])
+}
