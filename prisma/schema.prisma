@@ -278,6 +278,12 @@ model CandidateSite {
   @@index([nominalPointId])
 }
 
+/// Generic key/value app setting (managed from the Settings screen).
+model AppSetting {
+  key   String @id
+  value String
+}
+
 /// Settings catalogue — equipment type (managed from the Settings screen).
 model EquipmentType {
   id        String   @id @default(cuid())

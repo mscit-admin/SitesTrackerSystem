@@ -101,7 +101,16 @@ export interface SiteFilters {
   batch?: string;
 }
 
-export async function getSites(filters: SiteFilters) {
+export const PAGE_SIZE_OPTIONS = [10, 15, 25] as const;
+export const DEFAULT_PAGE_SIZE = 15;
+
+export async function getSitesPageSize(): Promise<number> {
+  const row = await prisma.appSetting.findUnique({ where: { key: "sitesPageSize" } });
+  const n = row ? parseInt(row.value, 10) : NaN;
+  return (PAGE_SIZE_OPTIONS as readonly number[]).includes(n) ? n : DEFAULT_PAGE_SIZE;
+}
+
+export async function getSites(filters: SiteFilters, page = 1, pageSize = DEFAULT_PAGE_SIZE) {
   const where: any = {};
   if (filters.region) where.region = filters.region;
   if (filters.status) where.overallStatus = filters.status;
@@ -115,24 +124,32 @@ export async function getSites(filters: SiteFilters) {
       { towerOwner: { contains: filters.q } },
     ];
   }
-  return prisma.site.findMany({
-    where,
-    orderBy: [{ region: "asc" }, { siteId: "asc" }],
-    select: {
-      id: true,
-      siteId: true,
-      name: true,
-      region: true,
-      subRegion: true,
-      siteType: true,
-      deliveryBatch: true,
-      currentPhase: true,
-      overallStatus: true,
-      progressPct: true,
-      onairDate: true,
-      _count: { select: { issues: { where: { status: "OPEN" } } } },
-    },
-  });
+
+  const [total, rows] = await Promise.all([
+    prisma.site.count({ where }),
+    prisma.site.findMany({
+      where,
+      orderBy: [{ region: "asc" }, { siteId: "asc" }],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+      select: {
+        id: true,
+        siteId: true,
+        name: true,
+        region: true,
+        subRegion: true,
+        siteType: true,
+        deliveryBatch: true,
+        currentPhase: true,
+        overallStatus: true,
+        progressPct: true,
+        onairDate: true,
+        _count: { select: { issues: { where: { status: "OPEN" } } } },
+      },
+    }),
+  ]);
+
+  return { rows, total, page, pageSize, totalPages: Math.max(1, Math.ceil(total / pageSize)) };
 }
 
 export async function getSite(id: string) {

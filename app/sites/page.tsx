@@ -1,7 +1,8 @@
 import Link from "next/link";
-import { getSites, getFilterOptions, SiteFilters } from "@/lib/queries";
+import { getSites, getFilterOptions, getSitesPageSize, SiteFilters, PAGE_SIZE_OPTIONS } from "@/lib/queries";
 import { PageHeader, Badge, ProgressBar } from "@/components/ui";
 import { SitesFilterBar } from "@/components/SitesFilterBar";
+import { PaginationBar } from "@/components/PaginationBar";
 import { PHASE_BY_CODE, OVERALL_LABELS } from "@/lib/lifecycle";
 import { fmtDate } from "@/lib/format";
 import { Plus, Download } from "lucide-react";
@@ -23,11 +24,21 @@ export default async function SitesPage({
     batch: typeof sp.batch === "string" ? sp.batch : undefined,
   };
 
-  const [sites, options] = await Promise.all([getSites(filters), getFilterOptions()]);
+  const sizeParam = typeof sp.size === "string" ? parseInt(sp.size, 10) : NaN;
+  const pageSize = (PAGE_SIZE_OPTIONS as readonly number[]).includes(sizeParam)
+    ? sizeParam
+    : await getSitesPageSize();
+  const page = Math.max(1, typeof sp.page === "string" ? parseInt(sp.page, 10) || 1 : 1);
+
+  const [result, options] = await Promise.all([
+    getSites(filters, page, pageSize),
+    getFilterOptions(),
+  ]);
+  const sites = result.rows;
 
   return (
     <div>
-      <PageHeader title="المواقع" subtitle={`${sites.length} موقعاً`}>
+      <PageHeader title="المواقع" subtitle={`${result.total} موقعاً`}>
         <div className="flex items-center gap-2">
           <a
             href="/GSDN_Master.xlsb"
@@ -100,6 +111,8 @@ export default async function SitesPage({
           </table>
         </div>
       </div>
+
+      <PaginationBar page={result.page} pageSize={result.pageSize} total={result.total} totalPages={result.totalPages} />
     </div>
   );
 }

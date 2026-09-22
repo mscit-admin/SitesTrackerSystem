@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui";
 import { CatalogManager } from "@/components/CatalogManager";
+import { PageSizeSetting } from "@/components/PageSizeSetting";
+import { getSitesPageSize } from "@/lib/queries";
 import {
   addEquipmentType,
   removeEquipmentType,
@@ -11,9 +13,10 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [types, makers] = await Promise.all([
+  const [types, makers, pageSize] = await Promise.all([
     prisma.equipmentType.findMany({ orderBy: { name: "asc" } }),
     prisma.manufacturer.findMany({ orderBy: { name: "asc" } }),
+    getSitesPageSize(),
   ]);
 
   return (
@@ -22,6 +25,10 @@ export default async function SettingsPage() {
         title="الإعدادات"
         subtitle="القوائم المرجعية المستخدمة في النظام — تُدار من هنا"
       />
+      <div className="mb-6">
+        <PageSizeSetting current={pageSize} />
+      </div>
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <CatalogManager
           title="أنواع المعدات"

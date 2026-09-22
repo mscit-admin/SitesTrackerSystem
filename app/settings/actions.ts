@@ -41,3 +41,16 @@ export async function removeManufacturer(fd: FormData) {
   if (id) await prisma.manufacturer.delete({ where: { id } });
   done();
 }
+
+export async function setSitesPageSize(fd: FormData) {
+  const value = String(fd.get("value") ?? "").trim();
+  if (!["10", "15", "25"].includes(value)) return { ok: false, error: "قيمة غير صالحة" };
+  await prisma.appSetting.upsert({
+    where: { key: "sitesPageSize" },
+    update: { value },
+    create: { key: "sitesPageSize", value },
+  });
+  revalidatePath("/settings");
+  revalidatePath("/sites");
+  return { ok: true };
+}
