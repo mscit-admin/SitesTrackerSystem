@@ -144,6 +144,7 @@ export async function getSites(filters: SiteFilters, page = 1, pageSize = DEFAUL
         overallStatus: true,
         progressPct: true,
         onairDate: true,
+        pendingDeletion: true,
         _count: { select: { issues: { where: { status: "OPEN" } } } },
       },
     }),

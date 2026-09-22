@@ -166,6 +166,84 @@ function safeParse(json: string): Record<string, any> {
   }
 }
 
+// ---- Two-step site deletion (request → phase manager → project manager) ----
+function revalidateDeletions() {
+  revalidatePath("/sites");
+  revalidatePath("/sites/deletions");
+  revalidatePath("/");
+}
+
+export async function createDeletionRequest(formData: FormData) {
+  const siteId = String(formData.get("siteId") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+  if (!siteId) return { ok: false, error: "الموقع غير معروف" };
+  if (reason.length < 3) return { ok: false, error: "سبب الحذف مطلوب" };
+
+  const site = await prisma.site.findUnique({ where: { id: siteId }, select: { id: true, siteId: true, name: true } });
+  if (!site) return { ok: false, error: "الموقع غير موجود" };
+
+  const open = await prisma.siteDeletionRequest.findFirst({
+    where: { siteId, status: { in: ["PENDING", "PHASE_APPROVED"] } },
+    select: { id: true },
+  });
+  if (open) return { ok: false, error: "يوجد طلب حذف قيد المعالجة لهذا الموقع" };
+
+  await prisma.$transaction([
+    prisma.siteDeletionRequest.create({
+      data: { siteId, siteCode: site.siteId, siteName: site.name, reason, status: "PENDING" },
+    }),
+    prisma.site.update({ where: { id: siteId }, data: { pendingDeletion: true } }),
+  ]);
+  revalidateDeletions();
+  return { ok: true };
+}
+
+export async function approveDeletionPhase(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await prisma.siteDeletionRequest.updateMany({
+    where: { id, status: "PENDING" },
+    data: { status: "PHASE_APPROVED", phaseApprovedAt: new Date() },
+  });
+  revalidateDeletions();
+}
+
+export async function approveDeletionPM(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  const req = await prisma.siteDeletionRequest.findUnique({ where: { id } });
+  if (!req || req.status !== "PHASE_APPROVED" || !req.siteId) return;
+
+  // Both approvals granted → actually delete the site, keep the audit record.
+  await prisma.$transaction([
+    prisma.site.delete({ where: { id: req.siteId } }),
+    prisma.siteDeletionRequest.update({
+      where: { id },
+      data: { status: "COMPLETED", pmApprovedAt: new Date(), deletedAt: new Date(), siteId: null },
+    }),
+  ]);
+  revalidateDeletions();
+}
+
+export async function rejectDeletion(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const stage = String(formData.get("stage") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim() || null;
+  if (!id) return;
+  const req = await prisma.siteDeletionRequest.findUnique({ where: { id }, select: { siteId: true, status: true } });
+  if (!req || !["PENDING", "PHASE_APPROVED"].includes(req.status)) return;
+
+  const ops: any[] = [
+    prisma.siteDeletionRequest.update({
+      where: { id },
+      data: { status: "REJECTED", rejectedStage: stage || null, rejectedReason: reason },
+    }),
+  ];
+  if (req.siteId) ops.push(prisma.site.update({ where: { id: req.siteId }, data: { pendingDeletion: false } }));
+  await prisma.$transaction(ops);
+  revalidateDeletions();
+}
+
 // ---- Update/insert sites from an uploaded GSDN Master workbook ----
 export async function importSitesFromExcel(formData: FormData) {
   const file = formData.get("file");
