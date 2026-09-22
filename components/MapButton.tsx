@@ -38,9 +38,12 @@ export function MapButton({
       if (cancelled || !mapEl.current) return;
       const existing = readForm();
       const start = existing ?? { lat: 32.8872, lng: 13.1913 }; // Tripoli
-      const map = L.map(mapEl.current).setView([start.lat, start.lng], existing ? 14 : 6);
+      const map = L.map(mapEl.current, { attributionControl: false }).setView(
+        [start.lat, start.lng],
+        existing ? 14 : 6
+      );
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: "© OpenStreetMap contributors",
+        attribution: "",
         maxZoom: 19,
       }).addTo(map);
       const icon = L.divIcon({
