@@ -182,6 +182,19 @@ async function main() {
     });
   }
 
+  // Default settings catalogues (equipment types + manufacturers).
+  const equipmentTypes = [
+    "MTS Cabinet", "Indoor IP Router", "RF Antenna", "MW Antenna",
+    "DC/OF Cable", "Power Rectifier", "Battery", "MDB",
+  ];
+  for (const name of equipmentTypes) {
+    await prisma.equipmentType.upsert({ where: { name }, update: {}, create: { name } });
+  }
+  const manufacturers = ["Cambium", "Huawei", "IPinfusion", "Polarium", "Nokia", "ZTE"];
+  for (const name of manufacturers) {
+    await prisma.manufacturer.upsert({ where: { name }, update: {}, create: { name } });
+  }
+
   console.log(`Done. On-air: ${onair}, Handed over: ${handedOver}.`);
 }
 

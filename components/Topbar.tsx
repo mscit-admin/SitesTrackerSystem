@@ -9,6 +9,7 @@ const LABELS: Record<string, string> = {
   sites: "المواقع",
   maintenance: "التشغيل والصيانة",
   risks: "سجل المخاطر",
+  settings: "الإعدادات",
 };
 
 export function Topbar() {

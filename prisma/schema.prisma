@@ -251,6 +251,8 @@ model CandidateSite {
   proposedEquipment String?
   installationReq  String?
 
+  equipment CandidateEquipment[]
+
   // Final package / approved data (steps 5-6)
   approvedHeights   String?
   approvedEquipment String?
@@ -274,4 +276,33 @@ model CandidateSite {
 
   @@index([stage])
   @@index([nominalPointId])
+}
+
+/// Settings catalogue — equipment type (managed from the Settings screen).
+model EquipmentType {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+/// Settings catalogue — manufacturer (managed from the Settings screen).
+model Manufacturer {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+/// An equipment line determined for a candidate (type + manufacturer + qty).
+model CandidateEquipment {
+  id            String        @id @default(cuid())
+  candidate     CandidateSite @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  candidateId   String
+  equipmentType String
+  manufacturer  String?
+  quantity      Int           @default(1)
+  createdAt     DateTime      @default(now())
+
+  @@index([candidateId])
 }

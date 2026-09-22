@@ -14,15 +14,33 @@ export default async function NominalPointDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const np = await prisma.nominalPoint.findUnique({
-    where: { id },
-    include: { candidates: { orderBy: { createdAt: "asc" } } },
-  });
+  const [np, types, makers] = await Promise.all([
+    prisma.nominalPoint.findUnique({
+      where: { id },
+      include: {
+        candidates: {
+          orderBy: { createdAt: "asc" },
+          include: { equipment: { orderBy: { createdAt: "asc" } } },
+        },
+      },
+    }),
+    prisma.equipmentType.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+    prisma.manufacturer.findMany({ where: { active: true }, orderBy: { name: "asc" } }),
+  ]);
   if (!np) notFound();
+
+  const equipmentTypes = types.map((t) => t.name);
+  const manufacturers = makers.map((m) => m.name);
 
   const candidates = np.candidates.map((c) => ({
     ...c,
     surveyDate: c.surveyDate ? c.surveyDate.toISOString().slice(0, 10) : null,
+    equipment: c.equipment.map((e) => ({
+      id: e.id,
+      equipmentType: e.equipmentType,
+      manufacturer: e.manufacturer,
+      quantity: e.quantity,
+    })),
     candidateApprovedAt: undefined,
     surveyPermittedAt: undefined,
     techApprovedAt: undefined,
@@ -69,7 +87,12 @@ export default async function NominalPointDetailPage({
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {candidates.map((c) => (
-            <CandidateCard key={c.id} c={c as any} />
+            <CandidateCard
+              key={c.id}
+              c={c as any}
+              equipmentTypes={equipmentTypes}
+              manufacturers={manufacturers}
+            />
           ))}
         </div>
       )}

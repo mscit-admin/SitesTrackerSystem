@@ -143,6 +143,38 @@ export async function rejectCandidate(fd: FormData) {
   return { ok: true };
 }
 
+// ---- Candidate equipment lines (type + manufacturer + quantity) ----
+export async function addCandidateEquipment(fd: FormData) {
+  const candidateId = str(fd, "candidateId");
+  const equipmentType = str(fd, "equipmentType");
+  if (!candidateId || !equipmentType) return { ok: false, error: "بيانات ناقصة" };
+  const cand = await prisma.candidateSite.findUnique({
+    where: { id: candidateId },
+    select: { nominalPointId: true },
+  });
+  if (!cand) return { ok: false, error: "المرشّح غير موجود" };
+  await prisma.candidateEquipment.create({
+    data: {
+      candidateId,
+      equipmentType,
+      manufacturer: str(fd, "manufacturer"),
+      quantity: num(fd, "quantity") ?? 1,
+    },
+  });
+  revalidateAcq(cand.nominalPointId);
+  return { ok: true };
+}
+
+export async function removeCandidateEquipment(fd: FormData) {
+  const id = String(fd.get("id") ?? "");
+  if (!id) return;
+  const eq = await prisma.candidateEquipment.delete({
+    where: { id },
+    select: { candidate: { select: { nominalPointId: true } } },
+  });
+  revalidateAcq(eq.candidate.nominalPointId);
+}
+
 // ---- Convert an approved candidate into a real Site (enters the lifecycle) ----
 export async function convertToSite(fd: FormData) {
   const candidateId = String(fd.get("candidateId"));

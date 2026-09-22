@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
-import { Check, X, ArrowLeft } from "lucide-react";
+import { Check, X, ArrowLeft, Plus, Trash2, Boxes } from "lucide-react";
 import {
   primaryAction,
   canReject,
@@ -21,11 +21,16 @@ import {
   approveFinal,
   rejectCandidate,
   convertToSite,
+  addCandidateEquipment,
+  removeCandidateEquipment,
 } from "@/app/acquisition/actions";
+
+type EquipLine = { id: string; equipmentType: string; manufacturer: string | null; quantity: number };
 
 type Cand = {
   id: string;
   name: string | null;
+  equipment?: EquipLine[];
   latitude: number | null;
   longitude: number | null;
   proximityKm: number | null;
@@ -54,11 +59,21 @@ const SIMPLE: Partial<Record<ActionKind, (fd: FormData) => Promise<any>>> = {
   approveTech,
 };
 
-export function CandidateCard({ c }: { c: Cand }) {
+export function CandidateCard({
+  c,
+  equipmentTypes = [],
+  manufacturers = [],
+}: {
+  c: Cand;
+  equipmentTypes?: string[];
+  manufacturers?: string[];
+}) {
   const [open, setOpen] = useState<null | "survey" | "final" | "convert" | "reject">(null);
   const [error, setError] = useState<string | null>(null);
   const action = primaryAction(c.stage);
   const isSector = ownerTypeOf(c.towerOwner) === "SECTOR";
+  // Equipment can be determined once survey permission is granted, before final approval.
+  const showEquip = !["SUBMITTED", "APPROVED_CANDIDATE", "SURVEY_REQUESTED", "REJECTED"].includes(c.stage);
 
   return (
     <div className="card p-4">
@@ -103,6 +118,16 @@ export function CandidateCard({ c }: { c: Cand }) {
         <Link href={`/sites/${c.linkedSiteId}`} className="mt-3 inline-flex items-center gap-1 text-sm text-brand-light hover:underline">
           <ArrowLeft size={14} /> عرض الموقع المُنشأ
         </Link>
+      )}
+
+      {showEquip && (
+        <EquipmentSection
+          candidateId={c.id}
+          lines={c.equipment ?? []}
+          equipmentTypes={equipmentTypes}
+          manufacturers={manufacturers}
+          editable={c.stage !== "ACQUIRED"}
+        />
       )}
 
       {error && <div className="mt-3 rounded-md bg-red-50 px-3 py-1.5 text-xs text-red-700">{error}</div>}
@@ -173,6 +198,102 @@ export function CandidateCard({ c }: { c: Cand }) {
           </L>
           <p className="text-xs text-gray-400">سيعود المسار للبحث عن مرشّح آخر لهذه النقطة.</p>
         </InlineForm>
+      )}
+    </div>
+  );
+}
+
+function EquipmentSection({
+  candidateId,
+  lines,
+  equipmentTypes,
+  manufacturers,
+  editable,
+}: {
+  candidateId: string;
+  lines: EquipLine[];
+  equipmentTypes: string[];
+  manufacturers: string[];
+  editable: boolean;
+}) {
+  const formRef = useRef<HTMLFormElement>(null);
+  return (
+    <div className="mt-3 rounded-md border border-gray-200 bg-gray-50/60 p-3">
+      <div className="mb-2 flex items-center gap-1.5 text-sm font-semibold text-gray-800">
+        <Boxes size={15} className="text-brand" /> المعدات المحددة
+      </div>
+
+      {lines.length > 0 ? (
+        <table className="mb-2 w-full text-xs">
+          <thead>
+            <tr className="text-gray-400">
+              <th className="py-1 text-right font-medium">نوع المعدة</th>
+              <th className="py-1 text-right font-medium">الشركة المصنّعة</th>
+              <th className="py-1 text-center font-medium">الكمية</th>
+              {editable && <th />}
+            </tr>
+          </thead>
+          <tbody>
+            {lines.map((l) => (
+              <tr key={l.id} className="border-t border-gray-100 text-gray-700">
+                <td className="py-1">{l.equipmentType}</td>
+                <td className="py-1">{l.manufacturer ?? "—"}</td>
+                <td className="py-1 text-center tabular-nums">{l.quantity}</td>
+                {editable && (
+                  <td className="py-1 text-left">
+                    <form action={removeCandidateEquipment}>
+                      <input type="hidden" name="id" value={l.id} />
+                      <button className="text-gray-400 hover:text-red-600" title="حذف"><Trash2 size={13} /></button>
+                    </form>
+                  </td>
+                )}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      ) : (
+        <p className="mb-2 text-xs text-gray-400">لا توجد معدات محددة بعد.</p>
+      )}
+
+      {editable && (
+        equipmentTypes.length === 0 ? (
+          <p className="text-xs text-amber-600">
+            عرّف أنواع المعدات والشركات المصنّعة أولاً من{" "}
+            <Link href="/settings" className="underline">شاشة الإعدادات</Link>.
+          </p>
+        ) : (
+          <form
+            ref={formRef}
+            action={async (fd) => {
+              await addCandidateEquipment(fd);
+              formRef.current?.reset();
+            }}
+            className="flex flex-wrap items-end gap-2"
+          >
+            <input type="hidden" name="candidateId" value={candidateId} />
+            <div className="min-w-36 flex-1">
+              <label className="mb-1 block text-[11px] text-gray-500">نوع المعدة</label>
+              <select name="equipmentType" required className="field w-full py-1.5 text-xs" defaultValue="">
+                <option value="" disabled>اختر…</option>
+                {equipmentTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div className="min-w-36 flex-1">
+              <label className="mb-1 block text-[11px] text-gray-500">الشركة المصنّعة</label>
+              <select name="manufacturer" className="field w-full py-1.5 text-xs" defaultValue="">
+                <option value="">—</option>
+                {manufacturers.map((m) => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </div>
+            <div className="w-20">
+              <label className="mb-1 block text-[11px] text-gray-500">الكمية</label>
+              <input name="quantity" type="number" min="1" defaultValue="1" className="field w-full py-1.5 text-xs" />
+            </div>
+            <button type="submit" className="btn-primary flex items-center gap-1 py-1.5 text-xs">
+              <Plus size={14} /> إضافة
+            </button>
+          </form>
+        )
       )}
     </div>
   );
