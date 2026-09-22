@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { MapPin } from "lucide-react";
 import { createNominalPoint } from "@/app/acquisition/actions";
+import { MapButton } from "@/components/MapButton";
 
 const REGIONS = ["Middle Area", "Tripoli Area", "Zawia Area", "WM Area"];
 
@@ -31,6 +32,9 @@ export function NominalPointForm() {
         <L label="خط الطول (Longitude)">
           <input name="longitude" type="number" step="any" className="field w-full" />
         </L>
+        <div className="flex items-end md:col-span-2">
+          <MapButton latName="latitude" lngName="longitude" />
+        </div>
         <L label="المنطقة">
           <select name="region" className="field w-full" defaultValue="">
             <option value="">—</option>

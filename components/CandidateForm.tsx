@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Plus } from "lucide-react";
 import { TOWER_OWNERS } from "@/lib/acquisition";
 import { addCandidate } from "@/app/acquisition/actions";
+import { MapButton } from "@/components/MapButton";
 
 export function CandidateForm({ nominalPointId }: { nominalPointId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -33,6 +34,9 @@ export function CandidateForm({ nominalPointId }: { nominalPointId: string }) {
       <Field label="خط الطول">
         <input name="longitude" type="number" step="any" className="field w-full" />
       </Field>
+      <div className="flex items-end">
+        <MapButton latName="latitude" lngName="longitude" />
+      </div>
 
       <Field label="القرب من النقطة (كم)">
         <input name="proximityKm" type="number" step="any" className="field w-full" />

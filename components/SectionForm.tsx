@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 import { Save, Check, AlertTriangle } from "lucide-react";
 import type { SectionDef } from "@/lib/formSchema";
 import { saveSiteSection } from "@/app/sites/actions";
+import { MapButton } from "@/components/MapButton";
 
 type SaveResult = { ok: boolean; error?: string; ts?: number } | void;
 type SaveAction = (fd: FormData) => Promise<SaveResult>;
@@ -76,6 +77,13 @@ export function SectionForm({
         {section.fields.map((f) => {
           const val = values[f.path] ?? "";
           const disabled = mode === "edit" && f.readOnlyOnEdit;
+          if (f.type === "map") {
+            return (
+              <div key={f.path} className={f.col === 2 ? "md:col-span-2" : ""}>
+                <MapButton latName={f.latName!} lngName={f.lngName!} />
+              </div>
+            );
+          }
           return (
             <div key={f.path} className={f.col === 2 ? "md:col-span-2" : ""}>
               <label className="mb-1 block text-xs font-medium text-gray-600">
