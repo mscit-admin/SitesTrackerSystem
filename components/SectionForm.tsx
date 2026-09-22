@@ -6,6 +6,7 @@ import { Save, Check, AlertTriangle } from "lucide-react";
 import type { SectionDef } from "@/lib/formSchema";
 import { saveSiteSection } from "@/app/sites/actions";
 import { MapButton } from "@/components/MapButton";
+import { RegionDetect } from "@/components/RegionDetect";
 
 type SaveResult = { ok: boolean; error?: string; ts?: number } | void;
 type SaveAction = (fd: FormData) => Promise<SaveResult>;
@@ -81,6 +82,18 @@ export function SectionForm({
             return (
               <div key={f.path} className={f.col === 2 ? "md:col-span-2" : ""}>
                 <MapButton latName={f.latName!} lngName={f.lngName!} />
+              </div>
+            );
+          }
+          if (f.type === "regiondetect") {
+            return (
+              <div key={f.path} className={f.col === 2 ? "md:col-span-2" : ""}>
+                <RegionDetect
+                  latName={f.latName!}
+                  lngName={f.lngName!}
+                  regionName={f.regionName!}
+                  subRegionName={f.subRegionName!}
+                />
               </div>
             );
           }

@@ -4,7 +4,7 @@
 //   phase.<group>.<key>  -> nested value inside Site.phaseData (JSON)
 // The same schema drives both form rendering and the save action.
 
-export type FieldType = "text" | "number" | "date" | "select" | "textarea" | "map";
+export type FieldType = "text" | "number" | "date" | "select" | "textarea" | "map" | "regiondetect";
 
 export interface FieldDef {
   path: string;
@@ -14,8 +14,10 @@ export interface FieldDef {
   col?: 1 | 2; // layout width hint
   keyField?: boolean; // the site code (editable only on create)
   readOnlyOnEdit?: boolean;
-  latName?: string; // for type "map"
-  lngName?: string; // for type "map"
+  latName?: string; // for type "map" / "regiondetect"
+  lngName?: string; // for type "map" / "regiondetect"
+  regionName?: string; // for type "regiondetect"
+  subRegionName?: string; // for type "regiondetect"
 }
 
 export interface SectionDef {
@@ -55,6 +57,7 @@ export const SECTIONS: SectionDef[] = [
       n("site.latitude", "خط العرض (Latitude)"),
       n("site.longitude", "خط الطول (Longitude)"),
       { path: "__map", label: "تحديد من الخريطة", type: "map", latName: "site.latitude", lngName: "site.longitude", col: 2 },
+      { path: "__regiondetect", label: "المنطقة المكتشفة", type: "regiondetect", latName: "site.latitude", lngName: "site.longitude", regionName: "site.region", subRegionName: "site.subRegion", col: 2 },
       s("site.region", "المنطقة", REGIONS),
       t("site.subRegion", "المنطقة الفرعية"),
       s("site.scenario", "السيناريو", SCENARIO),

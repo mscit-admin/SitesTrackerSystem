@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Pencil, Save } from "lucide-react";
 import { MapButton } from "@/components/MapButton";
+import { RegionDetect } from "@/components/RegionDetect";
 import { updateNominalPoint } from "@/app/acquisition/actions";
 
 const REGIONS = ["Middle Area", "Tripoli Area", "Zawia Area", "WM Area"];
@@ -44,6 +45,9 @@ export function NominalPointEdit({
         <L label="خط العرض"><input name="latitude" type="number" step="any" defaultValue={v(np.latitude)} className="field w-full" /></L>
         <L label="خط الطول"><input name="longitude" type="number" step="any" defaultValue={v(np.longitude)} className="field w-full" /></L>
         <div className="flex items-end"><MapButton latName="latitude" lngName="longitude" /></div>
+        <div className="md:col-span-2">
+          <RegionDetect latName="latitude" lngName="longitude" regionName="region" subRegionName="__noSubRegion" />
+        </div>
         <L label="ملاحظات"><input name="notes" defaultValue={v(np.notes)} className="field w-full" /></L>
       </div>
       <div className="mt-4 flex gap-2">

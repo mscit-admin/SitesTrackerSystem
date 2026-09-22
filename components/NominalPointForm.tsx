@@ -4,6 +4,7 @@ import { useState } from "react";
 import { MapPin } from "lucide-react";
 import { createNominalPoint } from "@/app/acquisition/actions";
 import { MapButton } from "@/components/MapButton";
+import { RegionDetect } from "@/components/RegionDetect";
 
 const REGIONS = ["Middle Area", "Tripoli Area", "Zawia Area", "WM Area"];
 
@@ -34,6 +35,9 @@ export function NominalPointForm() {
         </L>
         <div className="flex items-end md:col-span-2">
           <MapButton latName="latitude" lngName="longitude" />
+        </div>
+        <div className="md:col-span-2">
+          <RegionDetect latName="latitude" lngName="longitude" regionName="region" subRegionName="__noSubRegion" />
         </div>
         <L label="المنطقة">
           <select name="region" className="field w-full" defaultValue="">

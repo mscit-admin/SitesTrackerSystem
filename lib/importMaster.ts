@@ -2,6 +2,7 @@
 // Site data, reusing the same lifecycle derivation as the seed.
 import * as XLSX from "xlsx";
 import { deriveLifecycle } from "@/lib/lifecycle";
+import { detectRegion } from "@/lib/geoRegion";
 
 const EPOCH = Date.UTC(1899, 11, 30); // Excel day 0 = 1899-12-30
 
@@ -61,6 +62,20 @@ export function parseMasterSites(buf: ArrayBuffer): any[] {
     const siteId = g(1);
     if (!siteId || typeof siteId !== "string") continue;
 
+    const latitude = asNum(row[5]);
+    const longitude = asNum(row[6]);
+    let subRegion = g(12);
+    let region = g(13);
+    // Auto-derive Region / Sub-Region from coordinates when the workbook leaves
+    // them empty. Explicit workbook values always win.
+    if ((!region || !subRegion) && latitude != null && longitude != null) {
+      const det = detectRegion(latitude, longitude);
+      if (det) {
+        if (!region) region = det.region;
+        if (!subRegion && det.subRegion) subRegion = det.subRegion;
+      }
+    }
+
     const boq = (map: [string, number][]) => {
       const o: Record<string, any> = {};
       for (const [k, c] of map) o[k] = g(c);
@@ -72,15 +87,15 @@ export function parseMasterSites(buf: ArrayBuffer): any[] {
       name: g(2),
       towerOwner: g(3),
       ownerSiteId: g(4) != null ? String(g(4)) : null,
-      latitude: asNum(row[5]),
-      longitude: asNum(row[6]),
+      latitude,
+      longitude,
       existingOrNew: g(7),
       rtOrGf: g(8),
       towerType: g(9),
       towerHeight: asNum(row[10]),
       busbarHeight: asNum(row[11]),
-      subRegion: g(12),
-      region: g(13),
+      subRegion,
+      region,
       scenario: g(14),
       siteType: g(15) != null ? String(g(15)).trim() : null,
       uplinkSite: g(16),
