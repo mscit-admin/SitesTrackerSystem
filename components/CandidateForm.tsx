@@ -25,16 +25,22 @@ export function CandidateForm({
   nominalPointId,
   candidate,
   onDone,
+  defaultLat,
+  defaultLng,
 }: {
   nominalPointId?: string;
   candidate?: CandDefaults; // present => edit mode
   onDone?: () => void;
+  defaultLat?: number | null; // pre-fill from the nominal point (add mode)
+  defaultLng?: number | null;
 }) {
   const isEdit = !!candidate;
   const formRef = useRef<HTMLFormElement>(null);
   const [owner, setOwner] = useState(candidate?.towerOwner ?? "");
   const [pending, setPending] = useState(false);
   const v = (x: any) => (x == null ? "" : String(x));
+  const latDefault = isEdit ? candidate!.latitude : defaultLat;
+  const lngDefault = isEdit ? candidate!.longitude : defaultLng;
 
   return (
     <form
@@ -62,10 +68,10 @@ export function CandidateForm({
         <input name="name" defaultValue={v(candidate?.name)} className="field w-full" />
       </Field>
       <Field label="خط العرض">
-        <input name="latitude" type="number" step="any" defaultValue={v(candidate?.latitude)} className="field w-full" />
+        <input name="latitude" type="number" step="any" defaultValue={v(latDefault)} className="field w-full" />
       </Field>
       <Field label="خط الطول">
-        <input name="longitude" type="number" step="any" defaultValue={v(candidate?.longitude)} className="field w-full" />
+        <input name="longitude" type="number" step="any" defaultValue={v(lngDefault)} className="field w-full" />
       </Field>
       <div className="flex items-end">
         <MapButton latName="latitude" lngName="longitude" />
