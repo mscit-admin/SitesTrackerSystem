@@ -209,6 +209,7 @@ model NominalPoint {
   latitude  Float?
   longitude Float?
   region    String?
+  subRegion String?
   status    String  @default("OPEN") // OPEN / ACQUIRED / CANCELLED
   notes     String?
 

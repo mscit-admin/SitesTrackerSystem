@@ -82,7 +82,10 @@ export default async function AcquisitionPage({
                       <Link href={`/acquisition/${p.id}`} className="font-mono font-semibold text-brand-light hover:underline">{p.ref}</Link>
                     </td>
                     <td className="td">{p.name ?? "—"}</td>
-                    <td className="td text-gray-500">{p.region ?? "—"}</td>
+                    <td className="td text-gray-500">
+                      {p.region ?? "—"}
+                      {p.subRegion && <span className="text-gray-400"> ← {p.subRegion}</span>}
+                    </td>
                     <td className="td text-center">{p.candidates.length}</td>
                     <td className="td">{top ? <span className={`chip ${stageBadge(top)}`}>{stageLabel(top)}</span> : "—"}</td>
                     <td className="td">

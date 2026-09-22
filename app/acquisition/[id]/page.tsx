@@ -64,6 +64,7 @@ export default async function NominalPointDetailPage({
             </h1>
             <div className="mt-1 text-[13px] text-gray-500">
               {np.region ?? "—"}
+              {np.subRegion && <> ← {np.subRegion}</>}
               {np.latitude && np.longitude && <> · {np.latitude}, {np.longitude}</>}
             </div>
           </div>
@@ -72,7 +73,7 @@ export default async function NominalPointDetailPage({
           </span>
         </div>
         <div className="mt-3">
-          <NominalPointEdit np={{ id: np.id, ref: np.ref, name: np.name, latitude: np.latitude, longitude: np.longitude, region: np.region, notes: np.notes }} />
+          <NominalPointEdit np={{ id: np.id, ref: np.ref, name: np.name, latitude: np.latitude, longitude: np.longitude, region: np.region, subRegion: np.subRegion, notes: np.notes }} />
         </div>
       </div>
 

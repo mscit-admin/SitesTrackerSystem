@@ -43,6 +43,7 @@ export async function createNominalPoint(fd: FormData) {
       latitude: num(fd, "latitude"),
       longitude: num(fd, "longitude"),
       region: str(fd, "region"),
+      subRegion: str(fd, "subRegion"),
       notes: str(fd, "notes"),
     },
   });
@@ -88,6 +89,7 @@ export async function updateNominalPoint(fd: FormData) {
       latitude: num(fd, "latitude"),
       longitude: num(fd, "longitude"),
       region: str(fd, "region"),
+      subRegion: str(fd, "subRegion"),
       notes: str(fd, "notes"),
     },
   });
@@ -267,6 +269,7 @@ export async function convertToSite(fd: FormData) {
       siteId,
       name: cand.name ?? cand.nominalPoint.name,
       region: cand.nominalPoint.region,
+      subRegion: cand.nominalPoint.subRegion,
       latitude: cand.latitude,
       longitude: cand.longitude,
       towerOwner: cand.towerOwner,

@@ -11,7 +11,7 @@ const REGIONS = ["Middle Area", "Tripoli Area", "Zawia Area", "WM Area"];
 export function NominalPointEdit({
   np,
 }: {
-  np: { id: string; ref: string; name: string | null; latitude: number | null; longitude: number | null; region: string | null; notes: string | null };
+  np: { id: string; ref: string; name: string | null; latitude: number | null; longitude: number | null; region: string | null; subRegion: string | null; notes: string | null };
 }) {
   const [open, setOpen] = useState(false);
   const v = (x: any) => (x == null ? "" : String(x));
@@ -42,11 +42,14 @@ export function NominalPointEdit({
             {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </L>
+        <L label="المنطقة الفرعية">
+          <input name="subRegion" defaultValue={v(np.subRegion)} className="field w-full" />
+        </L>
         <L label="خط العرض"><input name="latitude" type="number" step="any" defaultValue={v(np.latitude)} className="field w-full" /></L>
         <L label="خط الطول"><input name="longitude" type="number" step="any" defaultValue={v(np.longitude)} className="field w-full" /></L>
         <div className="flex items-end"><MapButton latName="latitude" lngName="longitude" /></div>
         <div className="md:col-span-2">
-          <RegionDetect latName="latitude" lngName="longitude" regionName="region" subRegionName="__noSubRegion" />
+          <RegionDetect latName="latitude" lngName="longitude" regionName="region" subRegionName="subRegion" />
         </div>
         <L label="ملاحظات"><input name="notes" defaultValue={v(np.notes)} className="field w-full" /></L>
       </div>

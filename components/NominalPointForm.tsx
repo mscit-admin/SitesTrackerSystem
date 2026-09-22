@@ -37,13 +37,16 @@ export function NominalPointForm() {
           <MapButton latName="latitude" lngName="longitude" />
         </div>
         <div className="md:col-span-2">
-          <RegionDetect latName="latitude" lngName="longitude" regionName="region" subRegionName="__noSubRegion" />
+          <RegionDetect latName="latitude" lngName="longitude" regionName="region" subRegionName="subRegion" />
         </div>
         <L label="المنطقة">
           <select name="region" className="field w-full" defaultValue="">
             <option value="">—</option>
             {REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
+        </L>
+        <L label="المنطقة الفرعية">
+          <input name="subRegion" className="field w-full" />
         </L>
         <L label="ملاحظات">
           <input name="notes" className="field w-full" />
