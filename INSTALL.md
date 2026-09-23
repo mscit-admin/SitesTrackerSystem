@@ -303,6 +303,18 @@ The domain must resolve to this server and port 80 must be open to the internet 
 validation. Verify DNS (`dig +short tracker.example.com`) and firewall, then re-run
 the HTTPS script.
 
+**Forms fail with "Invalid Server Actions request" / a page shows "server-side
+exception" behind a reverse proxy on a non-standard port.**
+Next.js rejects Server Actions when the browser's `Origin` (which includes the port,
+e.g. `:8444`) doesn't match the host the proxy forwards. Make nginx forward the host
+**with the port**:
+```nginx
+    proxy_set_header Host $http_host;          # was: $host (drops the port)
+    proxy_set_header X-Forwarded-Host $http_host;
+```
+Then `sudo nginx -t && sudo systemctl reload nginx`. Alternatively, list the public
+origin in `.env` (`ALLOWED_ORIGINS=host:port`) and `./deploy.sh`.
+
 **Reset the database to a clean state (re-import all 318 sites).**
 ```bash
 npm run db:reset      # WARNING: wipes current data, then re-seeds from data/*.json
