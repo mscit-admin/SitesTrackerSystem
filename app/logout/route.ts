@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
 import { destroyCurrentSession } from "@/lib/auth";
 
 export const runtime = "nodejs";
 
 // Clears the session row + cookie, then sends the user to the login screen.
-// Used by the idle guard and by the central guard for stale/expired cookies.
-export async function GET(req: Request) {
+// Uses a RELATIVE Location so the browser stays on the public host (behind a
+// reverse proxy, the request's absolute URL is the internal one, e.g.
+// http://localhost:3010).
+export async function GET() {
   await destroyCurrentSession();
-  return NextResponse.redirect(new URL("/login", req.url));
+  return new Response(null, { status: 303, headers: { Location: "/login" } });
 }

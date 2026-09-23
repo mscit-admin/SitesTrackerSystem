@@ -18,17 +18,13 @@ export function middleware(req: NextRequest) {
   requestHeaders.set("x-pathname", pathname);
   const pass = () => NextResponse.next({ request: { headers: requestHeaders } });
 
+  // Use RELATIVE Location headers so redirects stay on the public host even when
+  // the app sits behind a reverse proxy (the internal request URL is localhost).
   if (!hasSession && !isPublic) {
-    const url = req.nextUrl.clone();
-    url.pathname = "/login";
-    url.search = `?next=${encodeURIComponent(pathname)}`;
-    return NextResponse.redirect(url);
+    return new NextResponse(null, { status: 307, headers: { Location: `/login?next=${encodeURIComponent(pathname)}` } });
   }
   if (hasSession && pathname === "/login") {
-    const url = req.nextUrl.clone();
-    url.pathname = "/";
-    url.search = "";
-    return NextResponse.redirect(url);
+    return new NextResponse(null, { status: 307, headers: { Location: "/" } });
   }
   return pass();
 }
