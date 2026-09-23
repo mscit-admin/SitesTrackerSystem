@@ -10,7 +10,9 @@ const SESSION_COOKIE = "__Host-gsdn_session";
 // getCurrentUser(); the root layout sends invalid sessions to /logout.
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const hasSession = req.cookies.has(SESSION_COOKIE);
+  // Require a NON-EMPTY value: a cleared cookie can linger as an empty string,
+  // and treating that as "logged in" would bounce the user in a redirect loop.
+  const hasSession = !!req.cookies.get(SESSION_COOKIE)?.value;
   const isPublic = pathname === "/login" || pathname === "/logout";
 
   // expose the path to server components (for the central auth guard)

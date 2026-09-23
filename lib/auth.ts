@@ -74,10 +74,11 @@ export async function createSession(userId: string, userAgent?: string | null) {
 export async function destroyCurrentSession() {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
-  if (token) {
-    await prisma.session.deleteMany({ where: { tokenHash: sha256(token) } });
-    jar.delete(SESSION_COOKIE);
-  }
+  if (token) await prisma.session.deleteMany({ where: { tokenHash: sha256(token) } });
+  // Clear with the SAME attributes the cookie was set with — a __Host- cookie is
+  // only removed when the clearing cookie also carries Secure + Path=/. Use an
+  // expiry in the past (maxAge:0 is treated as "unset" by some cookie encoders).
+  jar.set(SESSION_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", expires: new Date(0), maxAge: 0 });
 }
 
 function toAuthUser(u: any): AuthUser {
