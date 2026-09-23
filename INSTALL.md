@@ -42,11 +42,12 @@ git --version
 
 ## 2. Get the code
 
+The installation directory is **`~/projects/sts`**.
+
 ```bash
-cd /opt                      # or /home/<user>, anywhere you like
-sudo git clone https://github.com/mscit-admin/SitesTrackerSystem.git
-sudo chown -R "$USER":"$USER" SitesTrackerSystem
-cd SitesTrackerSystem
+mkdir -p ~/projects
+git clone https://github.com/mscit-admin/SitesTrackerSystem.git ~/projects/sts
+cd ~/projects/sts
 
 # use the current working branch
 git checkout claude/eager-fermat-q6xj2f
@@ -154,7 +155,7 @@ After this, `gsdn-tracker` restarts automatically whenever the server boots.
 Whenever you want to pull the newest code and redeploy:
 
 ```bash
-cd /opt/SitesTrackerSystem    # your install folder
+cd ~/projects/sts
 ./deploy.sh
 ```
 
@@ -181,7 +182,7 @@ pm2 start gsdn-tracker        # start again
 The whole database is one file: `dev.db` in the project folder. To back it up:
 
 ```bash
-cp /opt/SitesTrackerSystem/dev.db ~/gsdn-backup-$(date +%F).db
+cp ~/projects/sts/dev.db ~/gsdn-backup-$(date +%F).db
 ```
 
 Restore by copying a backup back over `dev.db` and running `pm2 restart gsdn-tracker`.

@@ -81,9 +81,10 @@ npm run db:seed                          # يُعيد تحميلها في قاع
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 sudo apt-get install -y nodejs git
 
-# 2) جلب الكود
-git clone https://github.com/mscit-admin/SitesTrackerSystem.git
-cd SitesTrackerSystem
+# 2) جلب الكود إلى مجلد التثبيت ~/projects/sts
+mkdir -p ~/projects
+git clone https://github.com/mscit-admin/SitesTrackerSystem.git ~/projects/sts
+cd ~/projects/sts
 
 # 3) التثبيت الأول (يثبّت الحزم + ينشئ القاعدة + يستورد الـ318 موقعاً + يبني + يشغّل عبر pm2)
 ./setup-server.sh            # على المنفذ الافتراضي 3000
