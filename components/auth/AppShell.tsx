@@ -3,11 +3,12 @@
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
+import { IdleGuard } from "@/components/auth/IdleGuard";
 
 // Public routes render without the app chrome (sidebar / topbar).
 const BARE_PREFIXES = ["/login"];
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children, idleMinutes }: { children: React.ReactNode; idleMinutes: number }) {
   const path = usePathname();
   const bare = BARE_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
 
@@ -15,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
+      <IdleGuard idleMinutes={idleMinutes} />
       <Sidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />

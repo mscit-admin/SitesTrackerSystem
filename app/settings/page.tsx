@@ -1,8 +1,12 @@
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { PageHeader } from "@/components/ui";
 import { CatalogManager } from "@/components/CatalogManager";
 import { PageSizeSetting } from "@/components/PageSizeSetting";
+import { SecuritySettings } from "@/components/SecuritySettings";
 import { getSitesPageSize } from "@/lib/queries";
+import { getSecuritySettings } from "@/lib/settings";
+import { getCurrentUser, can } from "@/lib/auth";
 import {
   addEquipmentType,
   removeEquipmentType,
@@ -13,10 +17,16 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const [types, makers, pageSize] = await Promise.all([
+  const me = await getCurrentUser();
+  if (!me) redirect("/login");
+  if (!can(me, "settings.view")) redirect("/");
+  const canEdit = can(me, "settings.edit");
+
+  const [types, makers, pageSize, security] = await Promise.all([
     prisma.equipmentType.findMany({ orderBy: { name: "asc" } }),
     prisma.manufacturer.findMany({ orderBy: { name: "asc" } }),
     getSitesPageSize(),
+    getSecuritySettings(),
   ]);
 
   return (
@@ -25,6 +35,9 @@ export default async function SettingsPage() {
         title="الإعدادات"
         subtitle="القوائم المرجعية المستخدمة في النظام — تُدار من هنا"
       />
+      <div className="mb-6">
+        <SecuritySettings current={security} canEdit={canEdit} />
+      </div>
       <div className="mb-6">
         <PageSizeSetting current={pageSize} />
       </div>

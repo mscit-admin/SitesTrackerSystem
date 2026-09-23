@@ -7,6 +7,7 @@ import type { SectionDef } from "@/lib/formSchema";
 import { saveSiteSection } from "@/app/sites/actions";
 import { MapButton } from "@/components/MapButton";
 import { RegionDetect } from "@/components/RegionDetect";
+import { DraftAutosave } from "@/components/DraftAutosave";
 
 type SaveResult = { ok: boolean; error?: string; ts?: number } | void;
 type SaveAction = (fd: FormData) => Promise<SaveResult>;
@@ -37,6 +38,7 @@ export function SectionForm({
 }) {
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const draftKey = `site:${siteId || "new"}:${section.id}`;
 
   return (
     <form
@@ -48,6 +50,8 @@ export function SectionForm({
           setError(res.error ?? "تعذّر الحفظ");
         } else if (res?.ok) {
           setSaved(true);
+          // saved to DB → drop the local draft
+          window.dispatchEvent(new CustomEvent("draft:clear", { detail: draftKey }));
           setTimeout(() => setSaved(false), 2500);
         }
       }}
@@ -55,6 +59,7 @@ export function SectionForm({
     >
       <input type="hidden" name="__siteId" value={siteId} />
       <input type="hidden" name="__sectionId" value={section.id} />
+      <DraftAutosave storageKey={draftKey} />
 
       <div className="mb-4 flex items-center justify-between">
         <div>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LogIn, Loader2, ShieldCheck, AlertTriangle } from "lucide-react";
+import { LogIn, Loader2, ShieldCheck, AlertTriangle, Clock } from "lucide-react";
 import { login } from "@/app/actions/auth";
 
 export default function LoginPage() {
@@ -13,6 +13,16 @@ export default function LoginPage() {
   const [need2fa, setNeed2fa] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("gsdn:sessionTimedOut") === "1") {
+        setTimedOut(true);
+        localStorage.removeItem("gsdn:sessionTimedOut");
+      }
+    } catch { /* ignore */ }
+  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4" dir="rtl">
@@ -41,6 +51,11 @@ export default function LoginPage() {
             if (res.error) setError(res.error);
           }}
         >
+          {timedOut && !error && (
+            <div className="flex items-center gap-2 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+              <Clock size={15} /> انتهت الجلسة لعدم النشاط. تم حفظ عملك غير المكتمل كمسودة.
+            </div>
+          )}
           {error && (
             <div className="flex items-center gap-2 rounded-md border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">
               <AlertTriangle size={15} /> {error}

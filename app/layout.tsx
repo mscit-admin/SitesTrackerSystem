@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
+import { getSecuritySettings } from "@/lib/settings";
 import { AuthProvider, type ClientUser } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/auth/AppShell";
 
@@ -15,7 +16,7 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const u = await getCurrentUser();
+  const [u, security] = await Promise.all([getCurrentUser(), getSecuritySettings()]);
   const clientUser: ClientUser | null = u
     ? {
         id: u.id,
@@ -48,7 +49,7 @@ export default async function RootLayout({
       </head>
       <body className="font-sans antialiased text-gray-900">
         <AuthProvider user={clientUser}>
-          <AppShell>{children}</AppShell>
+          <AppShell idleMinutes={security.idleMinutes}>{children}</AppShell>
         </AuthProvider>
       </body>
     </html>

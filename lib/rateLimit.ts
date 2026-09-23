@@ -7,9 +7,7 @@ interface Entry {
   lockUntil?: number;
 }
 
-const WINDOW_MS = 15 * 60_000; // 15 min sliding window
-const MAX_FAILURES = 8; // failures before lockout
-const LOCK_MS = 15 * 60_000; // lockout duration
+const WINDOW_MS = 15 * 60_000; // sliding window over which failures accumulate
 
 const store = new Map<string, Entry>();
 
@@ -22,16 +20,17 @@ export function isLocked(key: string): { locked: boolean; retryAfterSec?: number
   return { locked: false };
 }
 
-export function recordFailure(key: string): void {
+export function recordFailure(key: string, maxFailures = 8, lockMinutes = 15): void {
   const now = Date.now();
+  const lockMs = lockMinutes * 60_000;
   let e = store.get(key);
   if (!e || now - e.first > WINDOW_MS) e = { count: 0, first: now };
   e.count += 1;
-  if (e.count >= MAX_FAILURES) e.lockUntil = now + LOCK_MS;
+  if (e.count >= maxFailures) e.lockUntil = now + lockMs;
   store.set(key, e);
   // opportunistic prune
   if (store.size > 5000) {
-    for (const [k, v] of store) if ((v.lockUntil ?? v.first) + LOCK_MS < now) store.delete(k);
+    for (const [k, v] of store) if ((v.lockUntil ?? v.first) + lockMs < now) store.delete(k);
   }
 }
 

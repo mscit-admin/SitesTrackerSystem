@@ -233,7 +233,8 @@ model Session {
   tokenHash String   @unique
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId    String
-  expiresAt DateTime
+  expiresAt DateTime // absolute expiry
+  lastSeenAt DateTime @default(now()) // for idle timeout
   userAgent String?
   createdAt DateTime @default(now())
 

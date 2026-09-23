@@ -5,6 +5,7 @@ import { Plus, Save } from "lucide-react";
 import { TOWER_OWNERS } from "@/lib/acquisition";
 import { addCandidate, updateCandidate } from "@/app/acquisition/actions";
 import { MapButton } from "@/components/MapButton";
+import { DraftAutosave } from "@/components/DraftAutosave";
 
 type CandDefaults = {
   id: string;
@@ -38,6 +39,7 @@ export function CandidateForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [owner, setOwner] = useState(candidate?.towerOwner ?? "");
   const [pending, setPending] = useState(false);
+  const draftKey = isEdit ? `acq:candidate:${candidate!.id}` : `acq:candidate:new:${nominalPointId}`;
   const v = (x: any) => (x == null ? "" : String(x));
   const latDefault = isEdit ? candidate!.latitude : defaultLat;
   const lngDefault = isEdit ? candidate!.longitude : defaultLng;
@@ -49,6 +51,7 @@ export function CandidateForm({
         setPending(true);
         if (isEdit) await updateCandidate(fd);
         else await addCandidate(fd);
+        window.dispatchEvent(new CustomEvent("draft:clear", { detail: draftKey }));
         if (isEdit) onDone?.();
         else {
           formRef.current?.reset();
@@ -58,6 +61,7 @@ export function CandidateForm({
       }}
       className="grid grid-cols-1 gap-x-5 gap-y-3 md:grid-cols-3"
     >
+      <DraftAutosave storageKey={draftKey} />
       {isEdit ? (
         <input type="hidden" name="candidateId" value={candidate!.id} />
       ) : (

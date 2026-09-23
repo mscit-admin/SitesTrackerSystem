@@ -14,6 +14,7 @@ import {
 } from "@/lib/auth";
 import { verifyTotp } from "@/lib/totp";
 import { isLocked, recordFailure, recordSuccess } from "@/lib/rateLimit";
+import { getSecuritySettings } from "@/lib/settings";
 
 type Res = { ok: boolean; error?: string; need2fa?: boolean };
 
@@ -28,6 +29,8 @@ export async function login(formData: FormData): Promise<Res> {
   const ip = (hdrs.get("x-forwarded-for") ?? "").split(",")[0].trim() || "local";
   const rlKey = `${identifier}|${ip}`;
 
+  const { maxFailures, lockMinutes } = await getSecuritySettings();
+
   const lock = isLocked(rlKey);
   if (lock.locked) {
     return { ok: false, error: `محاولات كثيرة. حاول بعد ${Math.ceil((lock.retryAfterSec ?? 0) / 60)} دقيقة.` };
@@ -40,14 +43,14 @@ export async function login(formData: FormData): Promise<Res> {
   // Always run a bcrypt compare (constant-ish time; hides whether the id exists).
   const good = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !user.isActive || !good) {
-    recordFailure(rlKey);
+    recordFailure(rlKey, maxFailures, lockMinutes);
     return { ok: false, error: "بيانات الدخول غير صحيحة" };
   }
 
   if (user.twoFactorEnabled && user.twoFactorSecret) {
     if (!totp) return { ok: false, need2fa: true };
     if (!verifyTotp(totp, user.twoFactorSecret)) {
-      recordFailure(rlKey);
+      recordFailure(rlKey, maxFailures, lockMinutes);
       return { ok: false, need2fa: true, error: "رمز التحقق غير صحيح" };
     }
   }

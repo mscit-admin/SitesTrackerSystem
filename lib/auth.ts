@@ -5,11 +5,11 @@ import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { parsePerms, permGranted } from "@/lib/permissions";
+import { getSecuritySettings } from "@/lib/settings";
 
 // __Host- prefix: browser enforces Secure + Path=/ + no Domain, so no other host
 // on the shared nip.io domain can set/override it. Requires HTTPS (we have it).
 export const SESSION_COOKIE = "__Host-gsdn_session";
-const SESSION_DAYS = 7;
 
 // A valid bcrypt hash of a random string, compared against when a user is not
 // found so login timing doesn't reveal whether an identifier exists.
@@ -53,10 +53,11 @@ function sha256(v: string) {
 }
 
 export async function createSession(userId: string, userAgent?: string | null) {
+  const { absoluteDays } = await getSecuritySettings();
   const token = crypto.randomBytes(32).toString("hex");
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 86400_000);
+  const expiresAt = new Date(Date.now() + absoluteDays * 86400_000);
   await prisma.session.create({
-    data: { tokenHash: sha256(token), userId, expiresAt, userAgent: userAgent?.slice(0, 300) ?? null },
+    data: { tokenHash: sha256(token), userId, expiresAt, lastSeenAt: new Date(), userAgent: userAgent?.slice(0, 300) ?? null },
   });
   // Purge this user's expired sessions.
   await prisma.session.deleteMany({ where: { userId, expiresAt: { lt: new Date() } } });
@@ -109,11 +110,19 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
     include: { user: { include: { role: true } } },
   });
   if (!session) return null;
-  if (session.expiresAt < new Date()) {
+  const now = Date.now();
+  const { idleMinutes } = await getSecuritySettings();
+  const idleMs = idleMinutes * 60_000;
+  const expired = session.expiresAt.getTime() < now || now - session.lastSeenAt.getTime() > idleMs;
+  if (expired) {
     await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
     return null;
   }
   if (!session.user.isActive) return null;
+  // Slide the idle window (throttled to avoid a write on every request).
+  if (now - session.lastSeenAt.getTime() > 60_000) {
+    await prisma.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } }).catch(() => {});
+  }
   return toAuthUser(session.user);
 });
 

@@ -2,8 +2,24 @@
 
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { requirePermission } from "@/lib/auth";
+import { setSecuritySettings, type SecuritySettings } from "@/lib/settings";
 
 const name = (fd: FormData) => String(fd.get("name") ?? "").trim();
+
+export async function saveSecuritySettings(fd: FormData): Promise<{ ok: boolean; error?: string }> {
+  await requirePermission("settings.edit");
+  const num = (k: string) => parseInt(String(fd.get(k) ?? ""), 10);
+  const values: Partial<SecuritySettings> = {
+    idleMinutes: num("idleMinutes"),
+    absoluteDays: num("absoluteDays"),
+    maxFailures: num("maxFailures"),
+    lockMinutes: num("lockMinutes"),
+  };
+  await setSecuritySettings(values);
+  revalidatePath("/settings");
+  return { ok: true };
+}
 
 function done() {
   revalidatePath("/settings");
