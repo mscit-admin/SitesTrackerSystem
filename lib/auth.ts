@@ -6,8 +6,21 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { parsePerms, permGranted } from "@/lib/permissions";
 
-export const SESSION_COOKIE = "gsdn_session";
+// __Host- prefix: browser enforces Secure + Path=/ + no Domain, so no other host
+// on the shared nip.io domain can set/override it. Requires HTTPS (we have it).
+export const SESSION_COOKIE = "__Host-gsdn_session";
 const SESSION_DAYS = 7;
+
+// A valid bcrypt hash of a random string, compared against when a user is not
+// found so login timing doesn't reveal whether an identifier exists.
+export const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(16).toString("hex"), 12);
+
+/** Basic password policy: min 8 chars, at least one letter and one number. */
+export function passwordIssue(pw: string): string | null {
+  if (pw.length < 8) return "كلمة المرور 8 أحرف على الأقل";
+  if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) return "يجب أن تحتوي على حرف ورقم على الأقل";
+  return null;
+}
 
 export interface AuthUser {
   id: string;
@@ -45,6 +58,8 @@ export async function createSession(userId: string, userAgent?: string | null) {
   await prisma.session.create({
     data: { tokenHash: sha256(token), userId, expiresAt, userAgent: userAgent?.slice(0, 300) ?? null },
   });
+  // Purge this user's expired sessions.
+  await prisma.session.deleteMany({ where: { userId, expiresAt: { lt: new Date() } } });
   const jar = await cookies();
   jar.set(SESSION_COOKIE, token, {
     httpOnly: true,
@@ -93,7 +108,12 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
     where: { tokenHash: sha256(token) },
     include: { user: { include: { role: true } } },
   });
-  if (!session || session.expiresAt < new Date() || !session.user.isActive) return null;
+  if (!session) return null;
+  if (session.expiresAt < new Date()) {
+    await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
+    return null;
+  }
+  if (!session.user.isActive) return null;
   return toAuthUser(session.user);
 });
 

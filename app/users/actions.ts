@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, requirePermission, requireUser } from "@/lib/auth";
+import { hashPassword, requirePermission, passwordIssue } from "@/lib/auth";
 import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
 
 type Res = { ok: boolean; error?: string };
@@ -28,7 +28,8 @@ export async function createUser(fd: FormData): Promise<Res> {
   if (!firstName || !lastName) return { ok: false, error: "الاسم الأول والأخير مطلوبان" };
   if (!employeeId) return { ok: false, error: "الرقم الوظيفي مطلوب" };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "بريد إلكتروني غير صالح" };
-  if (password.length < 8) return { ok: false, error: "كلمة المرور 8 أحرف على الأقل" };
+  const pwIssue = passwordIssue(password);
+  if (pwIssue) return { ok: false, error: pwIssue };
 
   const dup = await prisma.user.findFirst({ where: { OR: [{ email }, { employeeId }] }, select: { id: true } });
   if (dup) return { ok: false, error: "البريد أو الرقم الوظيفي مستخدم مسبقاً" };
@@ -83,7 +84,8 @@ export async function resetUserPassword(fd: FormData): Promise<Res> {
   await requirePermission("users.resetPassword");
   const id = str(fd, "id");
   const password = str(fd, "password");
-  if (password.length < 8) return { ok: false, error: "كلمة المرور 8 أحرف على الأقل" };
+  const pwIssue = passwordIssue(password);
+  if (pwIssue) return { ok: false, error: pwIssue };
   await prisma.user.update({
     where: { id },
     data: { passwordHash: await hashPassword(password), mustChangePassword: true },

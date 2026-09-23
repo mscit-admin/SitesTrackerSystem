@@ -9,8 +9,11 @@ import {
   hashPassword,
   verifyPassword,
   requireUser,
+  passwordIssue,
+  DUMMY_HASH,
 } from "@/lib/auth";
 import { verifyTotp } from "@/lib/totp";
+import { isLocked, recordFailure, recordSuccess } from "@/lib/rateLimit";
 
 type Res = { ok: boolean; error?: string; need2fa?: boolean };
 
@@ -21,24 +24,36 @@ export async function login(formData: FormData): Promise<Res> {
   const totp = String(formData.get("totp") ?? "").trim();
   if (!identifier || !password) return { ok: false, error: "أدخل المعرّف وكلمة المرور" };
 
-  const user = await prisma.user.findFirst({
-    where: {
-      OR: [{ email: identifier }, { employeeId: identifier }],
-    },
-  });
-  // Constant-ish response to avoid leaking which part was wrong.
-  if (!user || !user.isActive) return { ok: false, error: "بيانات الدخول غير صحيحة" };
+  const hdrs = await headers();
+  const ip = (hdrs.get("x-forwarded-for") ?? "").split(",")[0].trim() || "local";
+  const rlKey = `${identifier}|${ip}`;
 
-  const good = await verifyPassword(password, user.passwordHash);
-  if (!good) return { ok: false, error: "بيانات الدخول غير صحيحة" };
+  const lock = isLocked(rlKey);
+  if (lock.locked) {
+    return { ok: false, error: `محاولات كثيرة. حاول بعد ${Math.ceil((lock.retryAfterSec ?? 0) / 60)} دقيقة.` };
+  }
+
+  const user = await prisma.user.findFirst({
+    where: { OR: [{ email: identifier }, { employeeId: identifier }] },
+  });
+
+  // Always run a bcrypt compare (constant-ish time; hides whether the id exists).
+  const good = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !user.isActive || !good) {
+    recordFailure(rlKey);
+    return { ok: false, error: "بيانات الدخول غير صحيحة" };
+  }
 
   if (user.twoFactorEnabled && user.twoFactorSecret) {
     if (!totp) return { ok: false, need2fa: true };
-    if (!verifyTotp(totp, user.twoFactorSecret)) return { ok: false, need2fa: true, error: "رمز التحقق غير صحيح" };
+    if (!verifyTotp(totp, user.twoFactorSecret)) {
+      recordFailure(rlKey);
+      return { ok: false, need2fa: true, error: "رمز التحقق غير صحيح" };
+    }
   }
 
-  const ua = (await headers()).get("user-agent");
-  await createSession(user.id, ua);
+  recordSuccess(rlKey);
+  await createSession(user.id, hdrs.get("user-agent"));
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
   return { ok: true };
 }
@@ -54,7 +69,8 @@ export async function changeOwnPassword(formData: FormData): Promise<Res> {
   const current = String(formData.get("current") ?? "");
   const next = String(formData.get("next") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
-  if (next.length < 8) return { ok: false, error: "كلمة المرور الجديدة 8 أحرف على الأقل" };
+  const issue = passwordIssue(next);
+  if (issue) return { ok: false, error: issue };
   if (next !== confirm) return { ok: false, error: "كلمتا المرور غير متطابقتين" };
 
   const row = await prisma.user.findUnique({ where: { id: me.id } });

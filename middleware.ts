@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 // Keep in sync with SESSION_COOKIE in lib/auth.ts. (Can't import lib/auth here —
 // it pulls Prisma/bcrypt into the edge runtime.)
-const SESSION_COOKIE = "gsdn_session";
+const SESSION_COOKIE = "__Host-gsdn_session";
 
 // Edge-level gate: only checks for the presence of a session cookie. Real
 // validation (expiry, active user, permissions) happens server-side via
