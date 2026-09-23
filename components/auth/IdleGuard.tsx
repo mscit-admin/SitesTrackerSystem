@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { logout } from "@/app/actions/auth";
 
 // Logs the user out after `idleMinutes` of no activity, saving unsaved form work
 // as a draft first (via the global "draft:flush" event). Shows a warning one
@@ -19,12 +18,14 @@ export function IdleGuard({ idleMinutes }: { idleMinutes: number }) {
     const idleMs = Math.max(1, idleMinutes) * 60_000;
     const warnMs = Math.max(0, idleMs - 60_000);
 
-    const endSession = async () => {
+    const endSession = () => {
       try {
         window.dispatchEvent(new Event("draft:flush")); // persist unsaved work
         localStorage.setItem("gsdn:sessionTimedOut", "1");
       } catch { /* ignore */ }
-      await logout(); // clears session + redirects to /login
+      // Hard navigation to the logout route: clears the session cookie server-side
+      // and lands on the login screen (reliable even from a background tab).
+      window.location.assign("/logout");
     };
 
     const reset = () => {

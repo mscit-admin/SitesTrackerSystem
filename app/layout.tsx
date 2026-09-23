@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { getSecuritySettings } from "@/lib/settings";
@@ -17,6 +19,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const [u, security] = await Promise.all([getCurrentUser(), getSecuritySettings()]);
+
+  // Central auth guard: a request that reached here with no valid user but on a
+  // protected path has a stale/expired cookie — send it through /logout (which
+  // clears the cookie) to the login screen. Prevents the "empty chrome" state.
+  const pathname = (await headers()).get("x-pathname") ?? "";
+  if (!u && pathname && pathname !== "/login" && pathname !== "/logout") {
+    redirect("/logout");
+  }
+
   const clientUser: ClientUser | null = u
     ? {
         id: u.id,
