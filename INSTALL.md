@@ -88,7 +88,27 @@ The chosen port is stored in `.env` and reused automatically by every update.
 
 ---
 
-## 5. Enable HTTPS (SSL)
+## 5. Plain HTTP (no HTTPS)
+
+If you don't need HTTPS yet, skip nginx entirely — the app serves HTTP directly.
+Just choose the port and open `http://<server-ip>:<port>`.
+
+```bash
+cd ~/projects/sts
+# (optional) if you previously enabled HTTPS, disable the nginx site so it frees the ports
+sudo rm -f /etc/nginx/sites-enabled/gsdn-tracker && sudo systemctl reload nginx 2>/dev/null || true
+
+# serve on port 80 -> clean URL http://<server-ip>   (root can bind 80)
+sed -i -E 's/^PORT=.*/PORT=80/' .env
+sudo fuser -k 80/tcp 2>/dev/null || true
+./deploy.sh
+sudo ufw allow 80/tcp
+```
+
+Prefer a non-privileged port? Use `PORT=8080` instead and open `http://<server-ip>:8080`
+(`sudo ufw allow 8080/tcp`). You can enable HTTPS later at any time (section 6).
+
+## 6. Enable HTTPS (SSL) — optional, later
 
 HTTPS is provided by **nginx** as a reverse proxy in front of the Node app. One
 script sets it up. Run it **after** the app is running (step 3).
@@ -151,7 +171,7 @@ Also open these ports in your cloud provider's security group if you have one.
 
 ---
 
-## 6. Start automatically on server reboot
+## 7. Start automatically on server reboot
 
 ```bash
 pm2 startup                   # prints a command — copy & run it exactly
@@ -162,7 +182,7 @@ After this, `gsdn-tracker` restarts automatically whenever the server boots.
 
 ---
 
-## 7. Updating to the latest version
+## 8. Updating to the latest version
 
 Whenever you want to pull the newest code and redeploy:
 
@@ -177,7 +197,7 @@ schema, rebuilds, and restarts pm2 on the same port. Then hard-refresh the brows
 
 ---
 
-## 8. Managing the app (pm2 cheat sheet)
+## 9. Managing the app (pm2 cheat sheet)
 
 ```bash
 pm2 status                    # is it running?
@@ -189,7 +209,7 @@ pm2 start gsdn-tracker        # start again
 
 ---
 
-## 9. Backups (SQLite)
+## 10. Backups (SQLite)
 
 The whole database is one file: `dev.db` in the project folder. To back it up:
 
@@ -202,7 +222,7 @@ You can also keep a copy of `.env`.
 
 ---
 
-## 10. Optional: PostgreSQL instead of SQLite
+## 11. Optional: PostgreSQL instead of SQLite
 
 For heavier multi-user load you can switch to PostgreSQL:
 
@@ -223,7 +243,7 @@ For heavier multi-user load you can switch to PostgreSQL:
 
 ---
 
-## 11. Re-importing / updating data from a new Excel file
+## 12. Re-importing / updating data from a new Excel file
 
 Two ways:
 
@@ -243,7 +263,7 @@ Two ways:
 
 ---
 
-## 12. Troubleshooting
+## 13. Troubleshooting
 
 **A change I made doesn't appear in the browser.**
 Almost always a stale build. Run `./deploy.sh` (it clears `.next` and rebuilds), then
