@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { LogIn, Loader2, ShieldCheck, AlertTriangle, Clock } from "lucide-react";
 import { login } from "@/app/actions/auth";
 
+// Only redirect to same-origin paths after login.
+function safeNext(raw: string | null): string {
+  if (raw && raw.startsWith("/") && !raw.startsWith("//")) return raw;
+  return "/";
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const sp = useSearchParams();
-  const next = sp.get("next") || "/";
-
+  const [next, setNext] = useState("/");
   const [need2fa, setNeed2fa] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -17,6 +21,8 @@ export default function LoginPage() {
 
   useEffect(() => {
     try {
+      const params = new URLSearchParams(window.location.search);
+      setNext(safeNext(params.get("next")));
       if (localStorage.getItem("gsdn:sessionTimedOut") === "1") {
         setTimedOut(true);
         localStorage.removeItem("gsdn:sessionTimedOut");
