@@ -32,11 +32,15 @@ echo "→ Restarting app…"
 APP_PORT="$(grep -E '^[[:space:]]*PORT=' .env 2>/dev/null | tail -1 | sed -E 's/^[^=]*=//; s/[^0-9]//g')"
 APP_PORT="${APP_PORT:-3000}"
 echo "  port: $APP_PORT"
-if pm2 describe gsdn-tracker >/dev/null 2>&1; then
-  PORT="$APP_PORT" pm2 restart gsdn-tracker --update-env
-else
-  PORT="$APP_PORT" pm2 start npm --name gsdn-tracker -- start -- -p "$APP_PORT"
-fi
+# Recreate the process cleanly and free the port, so a stale next-server child
+# from an earlier run can never keep holding it (EADDRINUSE crash-loop).
+pm2 delete gsdn-tracker >/dev/null 2>&1 || true
+if command -v fuser >/dev/null 2>&1; then fuser -k "${APP_PORT}/tcp" >/dev/null 2>&1 || true
+elif command -v lsof  >/dev/null 2>&1; then kill $(lsof -t -i:"${APP_PORT}" 2>/dev/null) >/dev/null 2>&1 || true; fi
+sleep 1
+# Run Next directly (NOT via `npm start`) so pm2 owns the real process.
+PORT="$APP_PORT" pm2 start ./node_modules/next/dist/bin/next \
+  --name gsdn-tracker --interpreter node -- start -p "$APP_PORT"
 pm2 save || true
 
 echo "✓ Done. Hard-refresh the browser (Ctrl+Shift+R)."

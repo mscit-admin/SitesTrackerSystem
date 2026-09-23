@@ -238,9 +238,21 @@ Almost always a stale build. Run `./deploy.sh` (it clears `.next` and rebuilds),
 hard-refresh (**Ctrl+Shift+R**). If `git pull` complains about `package-lock.json`,
 `deploy.sh` already handles it by discarding the auto-generated lockfile changes.
 
-**Port already in use.**
-Another process holds the port. Change `PORT=` in `.env` and run `./deploy.sh`, or
-find the process: `sudo lsof -i :3000`.
+**Port already in use / app keeps restarting (`EADDRINUSE`).**
+An old `next-server` process is still holding the port. Recover with:
+```bash
+cd ~/projects/sts
+pm2 delete gsdn-tracker
+sudo fuser -k "$(grep -E '^PORT=' .env | sed -E 's/[^0-9]//g')"/tcp   # free the app port
+./deploy.sh
+```
+The updated `setup-server.sh`/`deploy.sh` run Next directly under pm2 and free the
+port before starting, so this no longer recurs. To just move to a free port, change
+`PORT=` in `.env` and run `./deploy.sh`.
+
+> Note: the **app port** and the **HTTPS port** must differ. Recommended: keep the
+> app on an internal port like `3000` and let nginx serve HTTPS on `443` (or `8443`).
+> Don't set the app's `PORT` to the same value you pass as `HTTPS_PORT`.
 
 **`pm2: command not found`.**
 Install it globally: `sudo npm install -g pm2`. If still not found, ensure npm's

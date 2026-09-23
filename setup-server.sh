@@ -76,7 +76,14 @@ fi
 
 echo "→ Starting the app under pm2 (name: gsdn-tracker, port ${APP_PORT})…"
 pm2 delete gsdn-tracker >/dev/null 2>&1 || true
-PORT="$APP_PORT" pm2 start npm --name gsdn-tracker -- start -- -p "$APP_PORT"
+# Free the port in case a previous run left an orphaned next-server holding it.
+if command -v fuser >/dev/null 2>&1; then fuser -k "${APP_PORT}/tcp" >/dev/null 2>&1 || true
+elif command -v lsof  >/dev/null 2>&1; then kill $(lsof -t -i:"${APP_PORT}" 2>/dev/null) >/dev/null 2>&1 || true; fi
+sleep 1
+# Run Next directly (NOT via `npm start`) so pm2 owns the real process and
+# restarts release the port cleanly.
+PORT="$APP_PORT" pm2 start ./node_modules/next/dist/bin/next \
+  --name gsdn-tracker --interpreter node -- start -p "$APP_PORT"
 pm2 save
 
 echo ""
