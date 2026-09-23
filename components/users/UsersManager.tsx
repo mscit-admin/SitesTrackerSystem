@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { UserPlus, Pencil, KeyRound, Power, ShieldCheck, X, Check, AlertTriangle } from "lucide-react";
+import { UserPlus, Pencil, KeyRound, Power, ShieldCheck, X, Check, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { createUser, updateUser, setUserActive, resetUserPassword, disableUser2fa } from "@/app/users/actions";
 
 type Role = { id: string; name: string };
@@ -133,6 +133,10 @@ function UserModal({ roles, initial, onClose }: { roles: Role[]; initial: Row | 
       <form
         action={async (fd) => {
           setError(null);
+          if (!isEdit && String(fd.get("password")) !== String(fd.get("confirm"))) {
+            setError("كلمتا المرور غير متطابقتين");
+            return;
+          }
           const res = isEdit ? await updateUser(fd) : await createUser(fd);
           if (res.ok) onClose(); else setError(res.error ?? "تعذّر الحفظ");
         }}
@@ -153,10 +157,17 @@ function UserModal({ roles, initial, onClose }: { roles: Role[]; initial: Row | 
             </select>
           </F>
           {!isEdit && (
-            <F label="كلمة المرور المبدئية *" full>
-              <input name="password" type="text" required minLength={8} className="field w-full" dir="ltr" placeholder="8 أحرف على الأقل" />
-              <p className="mt-1 text-[11px] text-gray-400">سيُطلب من المستخدم تغييرها عند أول دخول.</p>
-            </F>
+            <>
+              <F label="كلمة المرور المبدئية *">
+                <PasswordField name="password" placeholder="8 أحرف على الأقل" />
+              </F>
+              <F label="تأكيد كلمة المرور *">
+                <PasswordField name="confirm" placeholder="أعد كتابة كلمة المرور" />
+              </F>
+              <p className="col-span-2 -mt-1 text-[11px] text-gray-400">
+                يجب أن تحتوي على حرف ورقم (8 أحرف على الأقل). سيُطلب من المستخدم تغييرها عند أول دخول.
+              </p>
+            </>
           )}
         </div>
         <div className="flex justify-end gap-2 pt-1">
@@ -175,6 +186,10 @@ function ResetModal({ row, onClose }: { row: Row; onClose: () => void }) {
       <form
         action={async (fd) => {
           setError(null);
+          if (String(fd.get("password")) !== String(fd.get("confirm"))) {
+            setError("كلمتا المرور غير متطابقتين");
+            return;
+          }
           const res = await resetUserPassword(fd);
           if (res.ok) onClose(); else setError(res.error ?? "تعذّر");
         }}
@@ -182,7 +197,14 @@ function ResetModal({ row, onClose }: { row: Row; onClose: () => void }) {
       >
         <input type="hidden" name="id" value={row.id} />
         {error && <div className="rounded-md border border-red-100 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
-        <F label="كلمة المرور الجديدة *"><input name="password" type="text" required minLength={8} className="field w-full" dir="ltr" /></F>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">كلمة المرور الجديدة *</label>
+          <PasswordField name="password" placeholder="8 أحرف على الأقل" />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-medium text-gray-600">تأكيد كلمة المرور *</label>
+          <PasswordField name="confirm" placeholder="أعد كتابة كلمة المرور" />
+        </div>
         <p className="text-[11px] text-gray-400">سيُطلب من المستخدم تغييرها عند الدخول، وستُنهى جلساته الحالية.</p>
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-ghost">إلغاء</button>
@@ -213,3 +235,31 @@ const F = ({ label, children, full }: { label: string; children: React.ReactNode
     {children}
   </div>
 );
+
+// Masked password input with a show/hide eye toggle.
+function PasswordField({ name, placeholder }: { name: string; placeholder?: string }) {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        name={name}
+        type={show ? "text" : "password"}
+        required
+        minLength={8}
+        autoComplete="new-password"
+        placeholder={placeholder}
+        className="field w-full pl-9"
+        dir="ltr"
+      />
+      <button
+        type="button"
+        onClick={() => setShow((s) => !s)}
+        tabIndex={-1}
+        aria-label={show ? "إخفاء كلمة المرور" : "إظهار كلمة المرور"}
+        className="absolute inset-y-0 left-2 flex items-center text-gray-400 hover:text-gray-600"
+      >
+        {show ? <EyeOff size={16} /> : <Eye size={16} />}
+      </button>
+    </div>
+  );
+}
