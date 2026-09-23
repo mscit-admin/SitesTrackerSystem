@@ -95,13 +95,17 @@ else
   # ---- self-signed path ----------------------------------------------------
   SSL_DIR=/etc/nginx/ssl
   mkdir -p "$SSL_DIR"
-  IP_GUESS="$(hostname -I 2>/dev/null | awk '{print $1}')"
+  # Use IP= to force a specific (e.g. public) IP; otherwise auto-detect.
+  IP_GUESS="${IP:-$(hostname -I 2>/dev/null | awk '{print $1}')}"
   if [ ! -f "$SSL_DIR/gsdn-selfsigned.crt" ]; then
-    echo "→ Generating a self-signed certificate (valid 10 years)…"
+    echo "→ Generating a self-signed certificate for ${IP_GUESS:-this host} (valid 10 years)…"
+    # Include the IP as a Subject Alternative Name — modern browsers require SAN.
+    SAN="subjectAltName=IP:${IP_GUESS:-127.0.0.1}"
     openssl req -x509 -nodes -newkey rsa:2048 -days 3650 \
       -keyout "$SSL_DIR/gsdn-selfsigned.key" \
       -out "$SSL_DIR/gsdn-selfsigned.crt" \
-      -subj "/CN=${IP_GUESS:-gsdn-tracker}" >/dev/null 2>&1
+      -subj "/CN=${IP_GUESS:-gsdn-tracker}" \
+      -addext "$SAN" >/dev/null 2>&1
   fi
 
   cat > "$SITE" <<CONF

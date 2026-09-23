@@ -106,15 +106,27 @@ sudo DOMAIN=tracker.example.com EMAIL=you@example.com ./scripts/setup-https.sh
 - The certificate **auto-renews** via certbot's systemd timer.
 - App is then served at `https://tracker.example.com`.
 
-### B) Access by IP / intranet — self-signed certificate
+### B) No domain — only an IP address (self-signed certificate)
+
+Let's Encrypt needs a domain, so with only an IP you use a **self-signed**
+certificate. This is the normal, supported setup for an IP-only server:
 
 ```bash
-sudo ./scripts/setup-https.sh
+# app on internal 3000, HTTPS on 8443, cert bound to your public IP
+sudo APP_PORT=3000 HTTPS_PORT=8443 IP=161.97.78.116 ./scripts/setup-https.sh
+sudo ufw allow 8443/tcp
 ```
 
-- Generates a self-signed certificate and serves HTTPS on 443.
-- Browsers show a one-time "Not secure" warning → **Advanced → Proceed**. This is
-  expected for self-signed certs and is fine for internal networks.
+- `IP=` sets the certificate's address (use your **public** IP). Omit it to
+  auto-detect the server's first IP.
+- Generates a self-signed certificate (valid 10 years, with the IP as a SAN) and
+  serves HTTPS on `HTTPS_PORT`.
+- Browse to `https://<your-ip>:<HTTPS_PORT>`. The browser shows a one-time
+  "Not secure / Your connection is not private" warning → **Advanced → Proceed**.
+  This is expected for self-signed certs and is safe on your own server; the traffic
+  is still encrypted.
+- To serve on the standard `443` instead, drop `HTTPS_PORT` (then the URL is just
+  `https://<your-ip>`).
 
 ### Custom ports
 
