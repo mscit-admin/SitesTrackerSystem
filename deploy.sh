@@ -29,7 +29,14 @@ rm -rf .next
 npm run build
 
 echo "→ Restarting app…"
-pm2 restart gsdn-tracker || pm2 start "npm start" --name gsdn-tracker
+APP_PORT="$(grep -E '^[[:space:]]*PORT=' .env 2>/dev/null | tail -1 | sed -E 's/^[^=]*=//; s/[^0-9]//g')"
+APP_PORT="${APP_PORT:-3000}"
+echo "  port: $APP_PORT"
+if pm2 describe gsdn-tracker >/dev/null 2>&1; then
+  PORT="$APP_PORT" pm2 restart gsdn-tracker --update-env
+else
+  PORT="$APP_PORT" pm2 start npm --name gsdn-tracker -- start -- -p "$APP_PORT"
+fi
 pm2 save || true
 
 echo "✓ Done. Hard-refresh the browser (Ctrl+Shift+R)."
