@@ -191,14 +191,53 @@ model PreventiveMaintenance {
 }
 
 /// System user (roles for the different teams). Auth wired in a later phase.
+/// A named role with a set of granted permission keys (see lib/permissions.ts).
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false) // built-in roles can't be deleted
+  isAdmin     Boolean  @default(false) // grants every permission (wildcard)
+  permissions String   @default("[]")  // JSON array of granted permission keys
+  users       User[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model User {
+  id                String    @id @default(cuid())
+  firstName         String
+  lastName          String
+  employeeId        String    @unique // User employment ID
+  mobile            String?
+  email             String    @unique
+  passwordHash      String
+  avatarUrl         String?
+  twoFactorEnabled  Boolean   @default(false)
+  twoFactorSecret   String?   // base32 TOTP secret (set when enabled)
+  mustChangePassword Boolean  @default(false)
+  isActive          Boolean   @default(true)
+  role              Role?     @relation(fields: [roleId], references: [id])
+  roleId            String?
+  sessions          Session[]
+  lastLoginAt       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([roleId])
+}
+
+/// Server-side session: the cookie holds a random token; we store only its hash.
+model Session {
   id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  role      String   @default("VIEWER") // ADMIN / DESIGN / CIVIL / TE / OM / VIEWER
-  active    Boolean  @default(true)
+  tokenHash String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  expiresAt DateTime
+  userAgent String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 /// Acquisition — a nominal point defined by the executor (AT Globe).

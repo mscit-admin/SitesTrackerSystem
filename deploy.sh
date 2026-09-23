@@ -24,6 +24,9 @@ npm ci
 echo "→ Syncing database schema…"
 npx prisma db push --accept-data-loss
 
+echo "→ Ensuring admin role + first admin user…"
+npm run seed:admin || true
+
 echo "→ Building…"
 rm -rf .next
 npm run build

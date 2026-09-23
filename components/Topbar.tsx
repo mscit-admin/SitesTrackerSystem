@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { UserMenu } from "@/components/auth/UserMenu";
 
 const LABELS: Record<string, string> = {
   "": "لوحة المؤشرات",
@@ -10,6 +11,8 @@ const LABELS: Record<string, string> = {
   maintenance: "التشغيل والصيانة",
   risks: "سجل المخاطر",
   deletions: "طلبات الحذف",
+  users: "المستخدمون والصلاحيات",
+  account: "حسابي",
   settings: "الإعدادات",
 };
 
@@ -42,9 +45,7 @@ export function Topbar() {
       </nav>
       <div className="flex items-center gap-2">
         <span className="hidden text-[11px] text-gray-400 sm:inline">GSDN Project</span>
-        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
-          م
-        </div>
+        <UserMenu />
       </div>
     </header>
   );

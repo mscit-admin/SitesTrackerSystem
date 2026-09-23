@@ -10,23 +10,28 @@ import {
   Compass,
   Settings,
   Trash2,
+  Users,
   type LucideIcon,
 } from "lucide-react";
+import { useAuth } from "@/components/auth/AuthProvider";
 
-const NAV: { href: string; label: string; icon: LucideIcon }[] = [
-  { href: "/", label: "لوحة المؤشرات", icon: LayoutDashboard },
-  { href: "/acquisition", label: "الاستحواذ", icon: Compass },
-  { href: "/sites", label: "المواقع", icon: Antenna },
-  { href: "/maintenance", label: "التشغيل والصيانة", icon: Wrench },
-  { href: "/risks", label: "سجل المخاطر", icon: ShieldAlert },
-  { href: "/deletions", label: "طلبات الحذف", icon: Trash2 },
-  { href: "/settings", label: "الإعدادات", icon: Settings },
+const NAV: { href: string; label: string; icon: LucideIcon; perm?: string }[] = [
+  { href: "/", label: "لوحة المؤشرات", icon: LayoutDashboard, perm: "dashboard.view" },
+  { href: "/acquisition", label: "الاستحواذ", icon: Compass, perm: "acquisition.view" },
+  { href: "/sites", label: "المواقع", icon: Antenna, perm: "sites.view" },
+  { href: "/maintenance", label: "التشغيل والصيانة", icon: Wrench, perm: "maintenance.view" },
+  { href: "/risks", label: "سجل المخاطر", icon: ShieldAlert, perm: "risks.view" },
+  { href: "/deletions", label: "طلبات الحذف", icon: Trash2, perm: "deletions.view" },
+  { href: "/users", label: "المستخدمون والصلاحيات", icon: Users, perm: "users.view" },
+  { href: "/settings", label: "الإعدادات", icon: Settings, perm: "settings.view" },
 ];
 
 export function Sidebar() {
   const path = usePathname();
+  const { can } = useAuth();
   const isActive = (href: string) =>
     href === "/" ? path === "/" : path.startsWith(href);
+  const nav = NAV.filter((n) => !n.perm || can(n.perm));
 
   return (
     <aside className="sticky top-0 z-20 flex h-screen w-16 shrink-0 flex-col border-l border-gray-200 bg-white md:w-60">
@@ -48,7 +53,7 @@ export function Sidebar() {
         <div className="mb-1 hidden px-2 text-[11px] font-medium uppercase tracking-wide text-gray-400 md:block">
           مساحة العمل
         </div>
-        {NAV.map((n) => {
+        {nav.map((n) => {
           const active = isActive(n.href);
           const Icon = n.icon;
           return (

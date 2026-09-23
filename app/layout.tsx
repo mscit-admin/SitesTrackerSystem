@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Sidebar } from "@/components/Sidebar";
-import { Topbar } from "@/components/Topbar";
+import { getCurrentUser } from "@/lib/auth";
+import { AuthProvider, type ClientUser } from "@/components/auth/AuthProvider";
+import { AppShell } from "@/components/auth/AppShell";
 
 export const metadata: Metadata = {
   title: "نظام متابعة مواقع الاتصالات — GSDN",
@@ -9,11 +10,26 @@ export const metadata: Metadata = {
     "نظام متابعة مواقع الاتصالات عبر مراحل التصميم والتجهيز والاختبار والإطلاق والتسليم والتشغيل والصيانة",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const u = await getCurrentUser();
+  const clientUser: ClientUser | null = u
+    ? {
+        id: u.id,
+        fullName: u.fullName,
+        employeeId: u.employeeId,
+        email: u.email,
+        avatarUrl: u.avatarUrl,
+        roleName: u.roleName,
+        isAdmin: u.isAdmin,
+        permissions: u.permissions,
+        twoFactorEnabled: u.twoFactorEnabled,
+      }
+    : null;
+
   return (
     <html lang="ar" dir="rtl">
       <head>
@@ -31,17 +47,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased text-gray-900">
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex min-w-0 flex-1 flex-col">
-            <Topbar />
-            <main className="flex-1">
-              <div className="mx-auto w-full max-w-[1280px] px-4 py-6 md:px-8">
-                {children}
-              </div>
-            </main>
-          </div>
-        </div>
+        <AuthProvider user={clientUser}>
+          <AppShell>{children}</AppShell>
+        </AuthProvider>
       </body>
     </html>
   );

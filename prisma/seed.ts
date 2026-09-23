@@ -167,20 +167,7 @@ async function main() {
   }
 
   // Demo users (roles for the different teams). Auth is wired in a later phase.
-  const users: Array<[string, string, string]> = [
-    ["مدير المشروع", "admin@gsdn.ly", "ADMIN"],
-    ["فريق التصميم والاستحواذ", "design@gsdn.ly", "DESIGN"],
-    ["فريق الأعمال المدنية", "civil@gsdn.ly", "CIVIL"],
-    ["فريق المعدات والتركيبات", "te@gsdn.ly", "TE"],
-    ["فريق التشغيل والصيانة", "om@gsdn.ly", "OM"],
-  ];
-  for (const [name, email, role] of users) {
-    await prisma.user.upsert({
-      where: { email },
-      update: { name, role },
-      create: { name, email, role },
-    });
-  }
+  // Users & roles are seeded separately by prisma/seedAdmin.ts (RBAC).
 
   // Default settings catalogues (equipment types + manufacturers).
   const equipmentTypes = [
