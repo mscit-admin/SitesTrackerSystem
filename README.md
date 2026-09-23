@@ -70,6 +70,31 @@ python3 scripts/extract_xlsb.py          # يُنتج data/sites.json و data/ri
 npm run db:seed                          # يُعيد تحميلها في قاعدة البيانات
 ```
 
+## التثبيت على خادم جديد (Production)
+
+على خادم Linux جديد (Ubuntu/Debian مثلاً)، بعد تثبيت **Node.js 18+**:
+
+```bash
+# 1) تثبيت Node.js 18 LTS (إن لم يكن مثبتاً)
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs git
+
+# 2) جلب الكود
+git clone https://github.com/mscit-admin/SitesTrackerSystem.git
+cd SitesTrackerSystem
+
+# 3) التثبيت الأول (يثبّت الحزم + ينشئ القاعدة + يستورد الـ318 موقعاً + يبني + يشغّل عبر pm2)
+./setup-server.sh
+```
+
+يعمل التطبيق بعدها على `http://<عنوان-الخادم>:3000`. القاعدة الافتراضية **SQLite** (بلا خادم قاعدة بيانات منفصل).
+
+- **لتشغيله تلقائياً عند إقلاع الخادم:** `pm2 startup` ثم نفّذ الأمر الذي يطبعه.
+- **للتحديثات لاحقاً:** `./deploy.sh` (يسحب أحدث كود، يزامن القاعدة، يعيد البناء والتشغيل).
+- **للوصول عبر المنفذ 80/دومين:** ضع **nginx** كوسيط عكسي أمام المنفذ 3000 (مع `proxy_set_header X-Accel-Buffering no;` لدعم شريط تقدّم الاستيراد).
+
+> إعداد الإعدادات في `.env` (منسوخ من `.env.example`). لاستخدام PostgreSQL راجع القسم التالي.
+
 ## الانتقال إلى الإنتاج (PostgreSQL)
 
 في `prisma/schema.prisma` غيّر `provider` إلى `"postgresql"`، وفي `.env` عيّن `DATABASE_URL` لخادم Postgres، ثم:
