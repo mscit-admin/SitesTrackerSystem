@@ -172,6 +172,21 @@ export const PERMISSION_CATALOG: PermModule[] = [
     ],
   },
   {
+    id: "localization",
+    label: "اللغات والترجمة",
+    groups: [
+      {
+        id: "localization",
+        label: "التعريب",
+        actions: [
+          A("localization.view", "عرض شاشة اللغات"),
+          A("localization.languages", "إدارة اللغات (إضافة/تعديل/افتراضية)"),
+          A("localization.translate", "تصدير/استيراد الترجمة (CSV)"),
+        ],
+      },
+    ],
+  },
+  {
     id: "users",
     label: "المستخدمون",
     groups: [

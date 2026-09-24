@@ -3,29 +3,32 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserMenu } from "@/components/auth/UserMenu";
+import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { useT } from "@/components/i18n/LocaleProvider";
 
-const LABELS: Record<string, string> = {
-  "": "لوحة المؤشرات",
-  acquisition: "الاستحواذ",
-  sites: "المواقع",
-  maintenance: "التشغيل والصيانة",
-  risks: "سجل المخاطر",
-  deletions: "طلبات الحذف",
-  users: "المستخدمون والصلاحيات",
-  account: "حسابي",
-  settings: "الإعدادات",
+const LABEL_KEY: Record<string, string> = {
+  "": "nav.dashboard",
+  acquisition: "nav.acquisition",
+  sites: "nav.sites",
+  maintenance: "nav.maintenance",
+  risks: "nav.risks",
+  deletions: "nav.deletions",
+  users: "nav.users",
+  account: "account.profile",
+  settings: "nav.settings",
 };
 
 export function Topbar() {
   const path = usePathname();
+  const t = useT();
   const seg = path.split("/").filter(Boolean);
-  const section = LABELS[seg[0] ?? ""] ?? "لوحة المؤشرات";
+  const section = t(LABEL_KEY[seg[0] ?? ""] ?? "nav.dashboard");
   const isDetail = seg[0] === "sites" && seg.length > 1;
 
   return (
     <header className="sticky top-0 z-10 flex h-[52px] items-center justify-between border-b border-gray-200 bg-white px-4 md:px-6">
       <nav className="flex items-center gap-1.5 text-[13px] text-gray-500">
-        <Link href="/" className="hover:text-gray-800">الرئيسية</Link>
+        <Link href="/" className="hover:text-gray-800">{t("common.home")}</Link>
         {seg.length > 0 && (
           <>
             <span className="text-gray-300">/</span>
@@ -44,7 +47,7 @@ export function Topbar() {
         )}
       </nav>
       <div className="flex items-center gap-2">
-        <span className="hidden text-[11px] text-gray-400 sm:inline">GSDN Project</span>
+        <LanguageSwitcher />
         <UserMenu />
       </div>
     </header>

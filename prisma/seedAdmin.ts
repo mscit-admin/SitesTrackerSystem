@@ -32,6 +32,22 @@ async function main() {
     });
   }
 
+  // 1b) default UI languages (Arabic default; English/French/Italian enabled)
+  const LANGS: [string, string, string, string, boolean][] = [
+    ["ar", "العربية", "AR", "rtl", true],
+    ["en", "English", "EN", "ltr", false],
+    ["fr", "Français", "FR", "ltr", false],
+    ["it", "Italiano", "IT", "ltr", false],
+  ];
+  let order = 0;
+  for (const [code, name, abbreviation, direction, isDefault] of LANGS) {
+    await prisma.language.upsert({
+      where: { code },
+      update: {},
+      create: { code, name, abbreviation, direction, isDefault, isEnabled: true, sortOrder: order++ },
+    });
+  }
+
   // 2) first admin user
   const count = await prisma.user.count();
   if (count === 0) {

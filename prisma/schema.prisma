@@ -10,6 +10,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// A UI language the app can be browsed in.
+model Language {
+  code         String        @id // system code, e.g. "en", "ar", "fr", "it"
+  name         String        // display name, e.g. "English", "العربية"
+  abbreviation String        // short label, e.g. "EN", "AR"
+  direction    String        @default("ltr") // "ltr" | "rtl"
+  isDefault    Boolean       @default(false)
+  isEnabled    Boolean       @default(true)
+  sortOrder    Int           @default(0)
+  translations Translation[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+/// A single translated string: (language, message-key) -> value.
+model Translation {
+  id           String   @id @default(cuid())
+  language     Language @relation(fields: [languageCode], references: [code], onDelete: Cascade)
+  languageCode String
+  key          String
+  value        String
+  updatedAt    DateTime @updatedAt
+
+  @@unique([languageCode, key])
+  @@index([languageCode])
+}
+
 /// A telecom site tracked across its full lifecycle.
 model Site {
   id           String  @id @default(cuid())

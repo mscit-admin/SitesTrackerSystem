@@ -4,10 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { LogOut, KeyRound, ShieldCheck, ChevronDown, UserCircle } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { useT } from "@/components/i18n/LocaleProvider";
 import { logout } from "@/app/actions/auth";
 
 export function UserMenu() {
   const { user } = useAuth();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -48,18 +50,18 @@ export function UserMenu() {
             {user.roleName && <div className="mt-0.5 text-[11px] text-brand">{user.roleName}</div>}
           </div>
           <Link href="/account/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
-            <UserCircle size={15} /> الملف الشخصي والصورة
+            <UserCircle size={15} /> {t("account.profile")}
           </Link>
           <Link href="/account/password" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
-            <KeyRound size={15} /> تغيير كلمة المرور
+            <KeyRound size={15} /> {t("account.password")}
           </Link>
           <Link href="/account/2fa" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
-            <ShieldCheck size={15} /> المصادقة الثنائية (2FA)
-            {user.twoFactorEnabled && <span className="chip bg-emerald-50 text-emerald-700 border-emerald-100 !py-0 text-[10px]">مفعّلة</span>}
+            <ShieldCheck size={15} /> {t("account.twofa")}
+            {user.twoFactorEnabled && <span className="chip bg-emerald-50 text-emerald-700 border-emerald-100 !py-0 text-[10px]">{t("lang.enabled")}</span>}
           </Link>
           <form action={logout}>
             <button className="flex w-full items-center gap-2 border-t border-gray-100 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50">
-              <LogOut size={15} /> تسجيل الخروج
+              <LogOut size={15} /> {t("account.logout")}
             </button>
           </form>
         </div>

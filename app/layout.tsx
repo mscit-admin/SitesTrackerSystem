@@ -4,8 +4,10 @@ import { redirect } from "next/navigation";
 import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { getSecuritySettings } from "@/lib/settings";
+import { getI18n, getEnabledLanguages } from "@/lib/i18n";
 import { AuthProvider, type ClientUser } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/auth/AppShell";
+import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 
 export const metadata: Metadata = {
   title: "نظام متابعة مواقع الاتصالات — GSDN",
@@ -18,7 +20,10 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [u, security] = await Promise.all([getCurrentUser(), getSecuritySettings()]);
+  const [u, security, i18n, enabledLangs] = await Promise.all([
+    getCurrentUser(), getSecuritySettings(), getI18n(), getEnabledLanguages(),
+  ]);
+  const langOptions = enabledLangs.map((l) => ({ code: l.code, name: l.name, abbreviation: l.abbreviation }));
 
   // Central auth guard: a request that reached here with no valid user but on a
   // protected path has a stale/expired cookie — send it through /logout (which
@@ -43,7 +48,7 @@ export default async function RootLayout({
     : null;
 
   return (
-    <html lang="ar" dir="rtl">
+    <html lang={i18n.locale} dir={i18n.dir}>
       <head>
         {/* Cairo loaded at runtime (not build time) so builds work offline.
             Falls back gracefully to Tahoma/Segoe UI if the network is blocked. */}
@@ -59,9 +64,11 @@ export default async function RootLayout({
         />
       </head>
       <body className="font-sans antialiased text-gray-900">
-        <AuthProvider user={clientUser}>
-          <AppShell idleMinutes={security.idleMinutes}>{children}</AppShell>
-        </AuthProvider>
+        <LocaleProvider value={{ locale: i18n.locale, dir: i18n.dir, messages: i18n.messages, languages: langOptions }}>
+          <AuthProvider user={clientUser}>
+            <AppShell idleMinutes={security.idleMinutes}>{children}</AppShell>
+          </AuthProvider>
+        </LocaleProvider>
       </body>
     </html>
   );
