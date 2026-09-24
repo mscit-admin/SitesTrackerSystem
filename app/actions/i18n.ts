@@ -96,16 +96,17 @@ export async function importTranslations(fd: FormData): Promise<Res> {
 
   const rows = parseCsv(csv);
   if (rows.length === 0) return { ok: false, error: "الملف فارغ" };
-  // detect header row
-  const start = rows[0][0]?.toLowerCase() === "key" ? 1 : 0;
+  // skip a header row (first cell "source"/"key")
+  const first = (rows[0][0] ?? "").toLowerCase();
+  const start = first === "source" || first === "key" ? 1 : 0;
   const known = new Set(ALL_MESSAGE_KEYS);
 
   let count = 0;
   const ops: any[] = [];
   for (let i = start; i < rows.length; i++) {
-    const key = (rows[i][0] ?? "").trim();
-    const value = (rows[i][2] ?? "").trim(); // 3rd column = translation
-    if (!key || !known.has(key)) continue;
+    const key = (rows[i][0] ?? "").trim(); // 1st column = source (the key)
+    const value = (rows[i][rows[i].length - 1] ?? "").trim(); // last column = translation
+    if (!key || !known.has(key) || value === key) continue;
     if (!value) continue;
     ops.push(
       prisma.translation.upsert({

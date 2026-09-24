@@ -5,7 +5,8 @@
   "description": "GSDN Telecom Sites Tracker — نظام متابعة مواقع الاتصالات",
   "scripts": {
     "dev": "next dev",
-    "build": "prisma generate && next build",
+    "build": "node scripts/extractI18n.js && prisma generate && next build",
+    "i18n:extract": "node scripts/extractI18n.js",
     "start": "next start",
     "lint": "next lint",
     "db:push": "prisma db push",

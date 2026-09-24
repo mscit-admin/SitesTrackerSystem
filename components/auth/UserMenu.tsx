@@ -50,18 +50,18 @@ export function UserMenu() {
             {user.roleName && <div className="mt-0.5 text-[11px] text-brand">{user.roleName}</div>}
           </div>
           <Link href="/account/profile" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
-            <UserCircle size={15} /> {t("account.profile")}
+            <UserCircle size={15} /> {t("الملف الشخصي والصورة")}
           </Link>
           <Link href="/account/password" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
-            <KeyRound size={15} /> {t("account.password")}
+            <KeyRound size={15} /> {t("تغيير كلمة المرور")}
           </Link>
           <Link href="/account/2fa" onClick={() => setOpen(false)} className="flex items-center gap-2 px-3 py-2 text-[13px] text-gray-700 hover:bg-gray-50">
-            <ShieldCheck size={15} /> {t("account.twofa")}
-            {user.twoFactorEnabled && <span className="chip bg-emerald-50 text-emerald-700 border-emerald-100 !py-0 text-[10px]">{t("lang.enabled")}</span>}
+            <ShieldCheck size={15} /> {t("المصادقة الثنائية (2FA)")}
+            {user.twoFactorEnabled && <span className="chip bg-emerald-50 text-emerald-700 border-emerald-100 !py-0 text-[10px]">{t("مفعّلة")}</span>}
           </Link>
           <form action={logout}>
             <button className="flex w-full items-center gap-2 border-t border-gray-100 px-3 py-2 text-[13px] text-red-600 hover:bg-red-50">
-              <LogOut size={15} /> {t("account.logout")}
+              <LogOut size={15} /> {t("تسجيل الخروج")}
             </button>
           </form>
         </div>

@@ -20,10 +20,10 @@ export function LocaleProvider({ value, children }: { value: LocaleCtx; children
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
-/** Client-side translator: const t = useT(); t("key", "fallback"). */
+/** Client-side translator: const t = useT(); t("النص المصدر") => translation || source. */
 export function useT() {
   const { messages } = useContext(Ctx);
-  return (key: string, fallback?: string) => messages[key] ?? fallback ?? key;
+  return (source: string) => messages[source] ?? source;
 }
 
 export function useLocale() {

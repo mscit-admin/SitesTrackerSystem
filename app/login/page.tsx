@@ -39,8 +39,8 @@ export default function LoginPage() {
           <div className="mb-3 flex h-14 w-14 items-center justify-center rounded-xl bg-brand text-lg font-bold text-white">
             aat
           </div>
-          <h1 className="text-lg font-bold text-gray-900">{t("app.title")}</h1>
-          <p className="mt-1 text-xs text-gray-500">{t("login.heading")}</p>
+          <h1 className="text-lg font-bold text-gray-900">{t("نظام متابعة مواقع GSDN")}</h1>
+          <p className="mt-1 text-xs text-gray-500">{t("سجّل الدخول للمتابعة")}</p>
         </div>
 
         <form
@@ -61,7 +61,7 @@ export default function LoginPage() {
         >
           {timedOut && !error && (
             <div className="flex items-center gap-2 rounded-md border border-amber-100 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-              <Clock size={15} /> {t("login.timedOut")}
+              <Clock size={15} /> {t("انتهت الجلسة لعدم النشاط. تم حفظ عملك غير المكتمل كمسودة.")}
             </div>
           )}
           {error && (
@@ -71,19 +71,19 @@ export default function LoginPage() {
           )}
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">{t("login.identifier")}</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600">{t("البريد الإلكتروني أو الرقم الوظيفي")}</label>
             <input name="identifier" autoFocus required className="field w-full" dir="ltr" />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-gray-600">{t("login.password")}</label>
+            <label className="mb-1 block text-xs font-medium text-gray-600">{t("كلمة المرور")}</label>
             <input name="password" type="password" required className="field w-full" dir="ltr" />
           </div>
 
           {need2fa && (
             <div>
               <label className="mb-1 flex items-center gap-1.5 text-xs font-medium text-gray-600">
-                <ShieldCheck size={14} /> {t("login.twofa")}
+                <ShieldCheck size={14} /> {t("رمز التحقق (2FA)")}
               </label>
               <input
                 name="totp"
@@ -93,17 +93,17 @@ export default function LoginPage() {
                 className="field w-full text-center tracking-[0.4em]"
                 dir="ltr"
               />
-              <p className="mt-1 text-[11px] text-gray-400">{t("login.twofaHint")}</p>
+              <p className="mt-1 text-[11px] text-gray-400">{t("أدخل الرمز من تطبيق المصادقة (Google Authenticator / Authy).")}</p>
             </div>
           )}
 
           <button type="submit" disabled={pending} className="btn-primary flex w-full items-center justify-center gap-2">
             {pending ? <Loader2 size={16} className="animate-spin" /> : <LogIn size={16} />}
-            {pending ? t("login.submitting") : t("login.submit")}
+            {pending ? t("جارٍ الدخول…") : t("دخول")}
           </button>
         </form>
 
-        <p className="mt-4 text-center text-[11px] text-gray-400">© {t("app.company")}</p>
+        <p className="mt-4 text-center text-[11px] text-gray-400">© {t("شركة الجيل الجديد — aat")}</p>
       </div>
     </div>
   );
