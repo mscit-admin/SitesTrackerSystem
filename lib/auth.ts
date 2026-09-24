@@ -11,6 +11,15 @@ import { accountActive } from "@/lib/accountExpiry";
 // __Host- prefix: browser enforces Secure + Path=/ + no Domain, so no other host
 // on the shared nip.io domain can set/override it. Requires HTTPS (we have it).
 export const SESSION_COOKIE = "__Host-gsdn_session";
+// Edge-readable flag so the middleware can force a password change on every
+// navigation (the root layout doesn't re-run on client-side nav).
+export const MUSTCHANGE_COOKIE = "gsdn_mustchange";
+
+export async function setMustChangeCookie(on: boolean) {
+  const jar = await cookies();
+  if (on) jar.set(MUSTCHANGE_COOKIE, "1", { httpOnly: true, secure: true, sameSite: "lax", path: "/" });
+  else jar.set(MUSTCHANGE_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", expires: new Date(0), maxAge: 0 });
+}
 
 // A valid bcrypt hash of a random string, compared against when a user is not
 // found so login timing doesn't reveal whether an identifier exists.
@@ -76,6 +85,7 @@ export async function destroyCurrentSession() {
   const jar = await cookies();
   const token = jar.get(SESSION_COOKIE)?.value;
   if (token) await prisma.session.deleteMany({ where: { tokenHash: sha256(token) } });
+  jar.set(MUSTCHANGE_COOKIE, "", { httpOnly: true, secure: true, sameSite: "lax", path: "/", expires: new Date(0), maxAge: 0 });
   // Clear with the SAME attributes the cookie was set with — a __Host- cookie is
   // only removed when the clearing cookie also carries Secure + Path=/. Use an
   // expiry in the past (maxAge:0 is treated as "unset" by some cookie encoders).

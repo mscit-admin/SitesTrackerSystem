@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Keep in sync with SESSION_COOKIE in lib/auth.ts. (Can't import lib/auth here —
-// it pulls Prisma/bcrypt into the edge runtime.)
+// Keep in sync with lib/auth.ts. (Can't import lib/auth here — it pulls
+// Prisma/bcrypt into the edge runtime.)
 const SESSION_COOKIE = "__Host-gsdn_session";
+const MUSTCHANGE_COOKIE = "gsdn_mustchange";
 
 // Edge-level gate: only checks for the presence of a session cookie. Real
 // validation (expiry, idle timeout, active user) happens server-side in
@@ -31,6 +32,18 @@ export function middleware(req: NextRequest) {
   if (hasSession && pathname === "/login") {
     const url = req.nextUrl.clone();
     url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+  // Force a password change: block every screen except the change page and logout.
+  if (
+    hasSession &&
+    req.cookies.get(MUSTCHANGE_COOKIE)?.value === "1" &&
+    pathname !== "/account/password" &&
+    pathname !== "/logout"
+  ) {
+    const url = req.nextUrl.clone();
+    url.pathname = "/account/password";
     url.search = "";
     return NextResponse.redirect(url);
   }

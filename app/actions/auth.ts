@@ -11,13 +11,14 @@ import {
   requireUser,
   passwordIssue,
   DUMMY_HASH,
+  setMustChangeCookie,
 } from "@/lib/auth";
 import { verifyTotp } from "@/lib/totp";
 import { isLocked, recordFailure, recordSuccess } from "@/lib/rateLimit";
 import { getSecuritySettings } from "@/lib/settings";
 import { accountActive } from "@/lib/accountExpiry";
 
-type Res = { ok: boolean; error?: string; need2fa?: boolean };
+type Res = { ok: boolean; error?: string; need2fa?: boolean; mustChange?: boolean };
 
 /** Login by email OR employee ID + password, with optional TOTP. */
 export async function login(formData: FormData): Promise<Res> {
@@ -63,8 +64,9 @@ export async function login(formData: FormData): Promise<Res> {
 
   recordSuccess(rlKey);
   await createSession(user.id, hdrs.get("user-agent"));
+  await setMustChangeCookie(user.mustChangePassword); // gate handled by middleware
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
-  return { ok: true };
+  return { ok: true, mustChange: user.mustChangePassword };
 }
 
 export async function logout() {
@@ -91,5 +93,6 @@ export async function changeOwnPassword(formData: FormData): Promise<Res> {
     where: { id: me.id },
     data: { passwordHash: await hashPassword(next), mustChangePassword: false },
   });
+  await setMustChangeCookie(false); // lift the middleware gate
   return { ok: true };
 }

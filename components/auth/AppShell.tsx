@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { Topbar } from "@/components/Topbar";
 import { IdleGuard } from "@/components/auth/IdleGuard";
 import { Localize } from "@/components/i18n/Localize";
+import { useAuth } from "@/components/auth/AuthProvider";
 import type { NotifItem } from "@/components/NotificationBell";
 
 // Public routes render without the app chrome (sidebar / topbar).
@@ -16,7 +17,9 @@ export function AppShell({
   children: React.ReactNode; idleMinutes: number; notifications: NotifItem[];
 }) {
   const path = usePathname();
-  const bare = BARE_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
+  const { user } = useAuth();
+  // No chrome on public routes, or while a mandatory password change is pending.
+  const bare = user?.mustChangePassword || BARE_PREFIXES.some((p) => path === p || path.startsWith(p + "/"));
 
   if (bare) return <><Localize />{children}</>;
 

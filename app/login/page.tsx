@@ -51,7 +51,7 @@ export default function LoginPage() {
             const res = await login(fd);
             setPending(false);
             if (res.ok) {
-              router.replace(next);
+              router.replace(res.mustChange ? "/account/password" : next);
               router.refresh();
               return;
             }
