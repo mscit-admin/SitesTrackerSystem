@@ -433,6 +433,7 @@ export const CATALOG: string[] = [
   "رفع وتحديث",
   "رقم التواصل",
   "رقم الجوال",
+  "رقم الموقع لدى شركة القطاع (Site ID)",
   "رمز",
   "رمز التحقق غير صحيح",
   "رمز اللغة غير صالح (مثال: en, fr, it)",
@@ -572,6 +573,7 @@ export const CATALOG: string[] = [
   "مثال: English, Français",
   "مثال: MTS Cabinet، IP Router، هوائي RF…",
   "مثال: NP-TR-014",
+  "مثال: TR-01234",
   "مثال: TR300",
   "مجدولة",
   "مجرى الكابلات",
@@ -690,6 +692,7 @@ export const CATALOG: string[] = [
   "PAT — الطاقة",
   "PAT — اللاسلكي",
   "PAT — الميكروويف",
+  "Site ID (شركة القطاع)",
   "STA — فعلي",
   "STA — مخطط"
 ];

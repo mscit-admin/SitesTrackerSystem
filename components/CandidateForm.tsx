@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { Plus, Save } from "lucide-react";
-import { TOWER_OWNERS } from "@/lib/acquisition";
+import { TOWER_OWNERS, ownerTypeOf } from "@/lib/acquisition";
 import { addCandidate, updateCandidate } from "@/app/acquisition/actions";
 import { MapButton } from "@/components/MapButton";
 import { DraftAutosave } from "@/components/DraftAutosave";
@@ -17,6 +17,7 @@ type CandDefaults = {
   easeOfProcedures: string | null;
   towerOwner: string | null;
   towerOwnerDetail: string | null;
+  sectorSiteId: string | null;
   contactPerson: string | null;
   contactPhone: string | null;
   address: string | null;
@@ -115,6 +116,11 @@ export function CandidateForm({
         </Field>
       ) : (
         <div className="hidden md:block" />
+      )}
+      {ownerTypeOf(owner) === "SECTOR" && (
+        <Field label="رقم الموقع لدى شركة القطاع (Site ID)">
+          <input name="sectorSiteId" defaultValue={v(candidate?.sectorSiteId)} className="field w-full" placeholder="مثال: TR-01234" />
+        </Field>
       )}
       <Field label="العنوان">
         <input name="address" defaultValue={v(candidate?.address)} className="field w-full" />

@@ -326,6 +326,7 @@ model CandidateSite {
   towerOwner       String? // Almadar / Albounya / Libyana / LTT / Citizen / Other
   towerOwnerDetail String? // required when Other
   ownerType        String? // SECTOR / CITIZEN / OTHER (derived)
+  sectorSiteId     String? // the sector company's own Site ID for the existing tower
   contactPerson    String?
   contactPhone     String?
   address          String?

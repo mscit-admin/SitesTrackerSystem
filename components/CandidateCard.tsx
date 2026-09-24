@@ -40,6 +40,7 @@ type Cand = {
   easeOfProcedures: string | null;
   towerOwner: string | null;
   towerOwnerDetail: string | null;
+  sectorSiteId: string | null;
   contactPerson: string | null;
   contactPhone: string | null;
   address: string | null;
@@ -116,6 +117,9 @@ export function CandidateCard({
         <Info label="الفايبر" value={fiberAr(c.fiberAvailable)} />
         <Info label="الإجراءات" value={easeAr(c.easeOfProcedures)} />
         <Info label="الإحداثيات" value={c.latitude && c.longitude ? `${c.latitude}, ${c.longitude}` : "—"} />
+        {isSector && c.sectorSiteId && (
+          <Info label="Site ID (شركة القطاع)" value={c.sectorSiteId} />
+        )}
         {(c.contactPerson || c.contactPhone) && (
           <Info label="التواصل" value={[c.contactPerson, c.contactPhone].filter(Boolean).join(" · ")} />
         )}
