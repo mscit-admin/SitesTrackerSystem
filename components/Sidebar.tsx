@@ -18,7 +18,7 @@ import { useT } from "@/components/i18n/LocaleProvider";
 
 const NAV: { href: string; label: string; icon: LucideIcon; perm?: string }[] = [
   { href: "/", label: "لوحة المؤشرات", icon: LayoutDashboard, perm: "dashboard.view" },
-  { href: "/acquisition", label: "الاستحواذ", icon: Compass, perm: "acquisition.view" },
+  { href: "/acquisition", label: "التصميم والاستحواذ", icon: Compass, perm: "acquisition.view" },
   { href: "/sites", label: "المواقع", icon: Antenna, perm: "sites.view" },
   { href: "/maintenance", label: "التشغيل والصيانة", icon: Wrench, perm: "maintenance.view" },
   { href: "/risks", label: "سجل المخاطر", icon: ShieldAlert, perm: "risks.view" },

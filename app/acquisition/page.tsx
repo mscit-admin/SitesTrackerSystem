@@ -43,7 +43,7 @@ export default async function AcquisitionPage({
 
   return (
     <div>
-      <PageHeader title="الاستحواذ" subtitle="اختيار المواقع واعتمادها عبر البوّابات الأربع حتى إنشاء الموقع">
+      <PageHeader title="التصميم والاستحواذ" subtitle="اختيار المواقع واعتمادها عبر البوّابات الأربع حتى إنشاء الموقع">
         <Link href="/acquisition/new" className="btn-primary flex items-center gap-1.5">
           <Plus size={16} /> نقطة اسمية جديدة
         </Link>

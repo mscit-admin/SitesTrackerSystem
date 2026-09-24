@@ -9,7 +9,7 @@ import { useT } from "@/components/i18n/LocaleProvider";
 
 const LABEL: Record<string, string> = {
   "": "لوحة المؤشرات",
-  acquisition: "الاستحواذ",
+  acquisition: "التصميم والاستحواذ",
   sites: "المواقع",
   maintenance: "التشغيل والصيانة",
   risks: "سجل المخاطر",
