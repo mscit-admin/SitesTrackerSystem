@@ -69,39 +69,11 @@ export function CandidateForm({
         <input type="hidden" name="nominalPointId" value={nominalPointId} />
       )}
 
-      <Field label="اسم المرشّح / الموقع">
+      {/* 1) اسم الموقع المرشّح */}
+      <Field label="اسم الموقع المرشّح">
         <input name="name" defaultValue={v(candidate?.name)} className="field w-full" />
       </Field>
-      <Field label="خط العرض">
-        <input name="latitude" type="number" step="any" defaultValue={v(latDefault)} className="field w-full" />
-      </Field>
-      <Field label="خط الطول">
-        <input name="longitude" type="number" step="any" defaultValue={v(lngDefault)} className="field w-full" />
-      </Field>
-      <div className="flex items-end">
-        <MapButton latName="latitude" lngName="longitude" />
-      </div>
-
-      <Field label="القرب من النقطة (كم)">
-        <input name="proximityKm" type="number" step="any" defaultValue={v(candidate?.proximityKm)} className="field w-full" />
-      </Field>
-      <Field label="توفّر الفايبر">
-        <select name="fiberAvailable" className="field w-full" defaultValue={v(candidate?.fiberAvailable)}>
-          <option value="">—</option>
-          <option value="Yes">متوفّر</option>
-          <option value="Partial">جزئي</option>
-          <option value="No">غير متوفّر</option>
-        </select>
-      </Field>
-      <Field label="سهولة الإجراءات">
-        <select name="easeOfProcedures" className="field w-full" defaultValue={v(candidate?.easeOfProcedures)}>
-          <option value="">—</option>
-          <option value="High">سهلة</option>
-          <option value="Medium">متوسطة</option>
-          <option value="Low">صعبة</option>
-        </select>
-      </Field>
-
+      {/* 2) مالك البرج */}
       <Field label="مالك البرج">
         <select name="towerOwner" className="field w-full" value={owner} onChange={(e) => setOwner(e.target.value)}>
           <option value="">—</option>
@@ -110,28 +82,68 @@ export function CandidateForm({
           ))}
         </select>
       </Field>
+      {/* 3) Site ID (لشركات القطاع) أو تفاصيل المالك (عند "أخرى") */}
       {owner === "Other" ? (
         <Field label="تفاصيل المالك (إلزامي)">
           <input name="towerOwnerDetail" required defaultValue={v(candidate?.towerOwnerDetail)} className="field w-full" />
         </Field>
-      ) : (
-        <div className="hidden md:block" />
-      )}
-      {ownerTypeOf(owner) === "SECTOR" && (
+      ) : ownerTypeOf(owner) === "SECTOR" ? (
         <Field label="رقم الموقع لدى شركة القطاع (Site ID)">
           <input name="sectorSiteId" defaultValue={v(candidate?.sectorSiteId)} className="field w-full" placeholder="مثال: TR-01234" />
         </Field>
+      ) : (
+        <div className="hidden md:block" />
       )}
+
+      {/* 4) دائرة العرض */}
+      <Field label="دائرة العرض">
+        <input name="latitude" type="number" step="any" defaultValue={v(latDefault)} className="field w-full" />
+      </Field>
+      {/* 5) خط الطول */}
+      <Field label="خط الطول">
+        <input name="longitude" type="number" step="any" defaultValue={v(lngDefault)} className="field w-full" />
+      </Field>
+      {/* 6) أيقونة اختيار الموقع من الخريطة */}
+      <div className="flex items-end">
+        <MapButton latName="latitude" lngName="longitude" iconOnly />
+      </div>
+
+      {/* 7) القرب من النقطة */}
+      <Field label="القرب من النقطة (كم)">
+        <input name="proximityKm" type="number" step="any" defaultValue={v(candidate?.proximityKm)} className="field w-full" />
+      </Field>
+      {/* توفّر الفايبر (بعد القرب من النقطة) */}
+      <Field label="توفّر الفايبر">
+        <select name="fiberAvailable" className="field w-full" defaultValue={v(candidate?.fiberAvailable)}>
+          <option value="">—</option>
+          <option value="Yes">متوفّر</option>
+          <option value="Partial">جزئي</option>
+          <option value="No">غير متوفّر</option>
+        </select>
+      </Field>
+      {/* 8) سهولة الوصول */}
+      <Field label="سهولة الوصول">
+        <select name="easeOfProcedures" className="field w-full" defaultValue={v(candidate?.easeOfProcedures)}>
+          <option value="">—</option>
+          <option value="High">سهلة</option>
+          <option value="Medium">متوسطة</option>
+          <option value="Low">صعبة</option>
+        </select>
+      </Field>
+
+      {/* 9) العنوان */}
       <Field label="العنوان">
         <input name="address" defaultValue={v(candidate?.address)} className="field w-full" />
       </Field>
-
-      <Field label="شخص التواصل">
+      {/* 10) اسم شخص للتواصل */}
+      <Field label="اسم شخص للتواصل">
         <input name="contactPerson" defaultValue={v(candidate?.contactPerson)} className="field w-full" />
       </Field>
-      <Field label="رقم التواصل">
+      {/* 11) رقم الهاتف للتواصل */}
+      <Field label="رقم الهاتف للتواصل">
         <input name="contactPhone" defaultValue={v(candidate?.contactPhone)} className="field w-full" />
       </Field>
+
       <div className="flex items-end gap-2">
         <button type="submit" disabled={pending} className="btn-primary flex items-center gap-1.5">
           {isEdit ? <Save size={16} /> : <Plus size={16} />}

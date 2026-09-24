@@ -11,10 +11,12 @@ export function MapButton({
   latName,
   lngName,
   label = "اختر من الخريطة",
+  iconOnly = false,
 }: {
   latName: string;
   lngName: string;
   label?: string;
+  iconOnly?: boolean;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
   const mapEl = useRef<HTMLDivElement>(null);
@@ -93,9 +95,22 @@ export function MapButton({
 
   return (
     <>
-      <button ref={btnRef} type="button" onClick={() => setOpen(true)} className="btn-ghost flex items-center gap-1.5">
-        <MapPin size={15} /> {label}
-      </button>
+      {iconOnly ? (
+        <button
+          ref={btnRef}
+          type="button"
+          onClick={() => setOpen(true)}
+          title={label}
+          aria-label={label}
+          className="btn-ghost flex h-[38px] w-[38px] items-center justify-center p-0"
+        >
+          <MapPin size={16} />
+        </button>
+      ) : (
+        <button ref={btnRef} type="button" onClick={() => setOpen(true)} className="btn-ghost flex items-center gap-1.5">
+          <MapPin size={15} /> {label}
+        </button>
+      )}
 
       {open && (
         <div

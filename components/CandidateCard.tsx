@@ -115,7 +115,7 @@ export function CandidateCard({
       <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600 md:grid-cols-4">
         <Info label="القرب" value={c.proximityKm != null ? `${c.proximityKm} كم` : "—"} />
         <Info label="الفايبر" value={fiberAr(c.fiberAvailable)} />
-        <Info label="الإجراءات" value={easeAr(c.easeOfProcedures)} />
+        <Info label="سهولة الوصول" value={easeAr(c.easeOfProcedures)} />
         <Info label="الإحداثيات" value={c.latitude && c.longitude ? `${c.latitude}, ${c.longitude}` : "—"} />
         {isSector && c.sectorSiteId && (
           <Info label="Site ID (شركة القطاع)" value={c.sectorSiteId} />
