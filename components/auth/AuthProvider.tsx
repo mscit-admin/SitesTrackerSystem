@@ -13,6 +13,7 @@ export interface ClientUser {
   isAdmin: boolean;
   permissions: string[];
   twoFactorEnabled: boolean;
+  mustChangePassword: boolean;
 }
 
 const AuthCtx = createContext<{ user: ClientUser | null }>({ user: null });

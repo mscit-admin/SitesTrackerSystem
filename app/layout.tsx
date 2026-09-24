@@ -32,6 +32,11 @@ export default async function RootLayout({
   if (!u && pathname && pathname !== "/login" && pathname !== "/logout") {
     redirect("/logout");
   }
+  // Force a password change (new users, and after an admin reset) before the
+  // user can use anything else.
+  if (u && u.mustChangePassword && pathname !== "/account/password" && pathname !== "/logout") {
+    redirect("/account/password");
+  }
 
   const clientUser: ClientUser | null = u
     ? {
@@ -44,6 +49,7 @@ export default async function RootLayout({
         isAdmin: u.isAdmin,
         permissions: u.permissions,
         twoFactorEnabled: u.twoFactorEnabled,
+        mustChangePassword: u.mustChangePassword,
       }
     : null;
 
