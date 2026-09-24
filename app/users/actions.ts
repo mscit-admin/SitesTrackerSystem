@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { hashPassword, requirePermission, passwordIssue } from "@/lib/auth";
+import { hashPassword, requirePermission } from "@/lib/auth";
+import { validatePassword } from "@/lib/passwordPolicy";
 import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
 
 type Res = { ok: boolean; error?: string };
@@ -36,7 +37,7 @@ export async function createUser(fd: FormData): Promise<Res> {
   if (!firstName || !lastName) return { ok: false, error: "الاسم الأول والأخير مطلوبان" };
   if (!employeeId) return { ok: false, error: "الرقم الوظيفي مطلوب" };
   if (!/^\S+@\S+\.\S+$/.test(email)) return { ok: false, error: "بريد إلكتروني غير صالح" };
-  const pwIssue = passwordIssue(password);
+  const pwIssue = await validatePassword(password);
   if (pwIssue) return { ok: false, error: pwIssue };
 
   const validFrom = dateFrom(fd, "validFrom");
@@ -108,7 +109,7 @@ export async function resetUserPassword(fd: FormData): Promise<Res> {
   await requirePermission("users.resetPassword");
   const id = str(fd, "id");
   const password = str(fd, "password");
-  const pwIssue = passwordIssue(password);
+  const pwIssue = await validatePassword(password);
   if (pwIssue) return { ok: false, error: pwIssue };
   await prisma.user.update({
     where: { id },

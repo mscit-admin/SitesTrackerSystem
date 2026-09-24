@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/auth";
 import { setSecuritySettings, type SecuritySettings } from "@/lib/settings";
+import { setPasswordPolicy, PASSWORD_POLICY_DEFAULTS, type PasswordPolicy } from "@/lib/passwordPolicy";
 
 const name = (fd: FormData) => String(fd.get("name") ?? "").trim();
 
@@ -17,6 +18,32 @@ export async function saveSecuritySettings(fd: FormData): Promise<{ ok: boolean;
     lockMinutes: num("lockMinutes"),
   };
   await setSecuritySettings(values);
+  revalidatePath("/settings");
+  return { ok: true };
+}
+
+export async function savePasswordPolicy(fd: FormData): Promise<{ ok: boolean; error?: string }> {
+  await requirePermission("settings.edit");
+  const num = (k: string, d: number) => {
+    const n = parseInt(String(fd.get(k) ?? ""), 10);
+    return Number.isFinite(n) ? n : d;
+  };
+  const on = (k: string) => fd.get(k) != null;
+  const codes = String(fd.get("langCodes") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const langLetters: Record<string, boolean> = {};
+  for (const c of codes) langLetters[c] = fd.get(`lang_${c}`) != null;
+
+  const policy: PasswordPolicy = {
+    minLength: num("minLength", PASSWORD_POLICY_DEFAULTS.minLength),
+    minDigits: num("minDigits", PASSWORD_POLICY_DEFAULTS.minDigits),
+    minLetters: num("minLetters", PASSWORD_POLICY_DEFAULTS.minLetters),
+    requireUppercase: on("requireUppercase"),
+    requireLowercase: on("requireLowercase"),
+    requireSymbol: on("requireSymbol"),
+    allowSymbols: on("allowSymbols"),
+    langLetters,
+  };
+  await setPasswordPolicy(policy);
   revalidatePath("/settings");
   return { ok: true };
 }

@@ -9,10 +9,10 @@ import {
   hashPassword,
   verifyPassword,
   requireUser,
-  passwordIssue,
   DUMMY_HASH,
   setMustChangeCookie,
 } from "@/lib/auth";
+import { validatePassword } from "@/lib/passwordPolicy";
 import { verifyTotp } from "@/lib/totp";
 import { isLocked, recordFailure, recordSuccess } from "@/lib/rateLimit";
 import { getSecuritySettings } from "@/lib/settings";
@@ -80,7 +80,7 @@ export async function changeOwnPassword(formData: FormData): Promise<Res> {
   const current = String(formData.get("current") ?? "");
   const next = String(formData.get("next") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
-  const issue = passwordIssue(next);
+  const issue = await validatePassword(next);
   if (issue) return { ok: false, error: issue };
   if (next !== confirm) return { ok: false, error: "كلمتا المرور غير متطابقتين" };
 
