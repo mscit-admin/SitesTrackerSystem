@@ -6,6 +6,7 @@ import { KeyRound, Check, AlertTriangle, ShieldAlert } from "lucide-react";
 import { changeOwnPassword } from "@/app/actions/auth";
 import { PageHeader } from "@/components/ui";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { PasswordFields } from "@/components/PasswordFields";
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -49,15 +50,12 @@ export default function ChangePasswordPage() {
           <label className="mb-1 block text-xs font-medium text-gray-600">كلمة المرور الحالية</label>
           <input name="current" type="password" required className="field w-full" dir="ltr" autoComplete="current-password" />
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">كلمة المرور الجديدة</label>
-          <input name="next" type="password" required minLength={8} className="field w-full" dir="ltr" autoComplete="new-password" />
-          <p className="mt-1 text-[11px] text-gray-400">8 أحرف على الأقل، وتحتوي على حرف ورقم.</p>
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-gray-600">تأكيد كلمة المرور</label>
-          <input name="confirm" type="password" required minLength={8} className="field w-full" dir="ltr" autoComplete="new-password" />
-        </div>
+        <PasswordFields
+          newName="next"
+          confirmName="confirm"
+          newLabel="كلمة المرور الجديدة"
+          hint="8 أحرف على الأقل، وتحتوي على حرف ورقم."
+        />
         <button type="submit" className="btn-primary flex items-center gap-1.5"><KeyRound size={16} /> حفظ</button>
       </form>
     </div>
