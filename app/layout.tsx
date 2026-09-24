@@ -5,6 +5,8 @@ import "./globals.css";
 import { getCurrentUser } from "@/lib/auth";
 import { getSecuritySettings } from "@/lib/settings";
 import { getI18n, getEnabledLanguages } from "@/lib/i18n";
+import { sweepAccountExpiry } from "@/lib/accountExpiry";
+import { prisma } from "@/lib/prisma";
 import { AuthProvider, type ClientUser } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/auth/AppShell";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
@@ -20,10 +22,19 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Periodically disable expired accounts + queue expiry notices (throttled).
+  await sweepAccountExpiry().catch(() => {});
+
   const [u, security, i18n, enabledLangs] = await Promise.all([
     getCurrentUser(), getSecuritySettings(), getI18n(), getEnabledLanguages(),
   ]);
   const langOptions = enabledLangs.map((l) => ({ code: l.code, name: l.name, abbreviation: l.abbreviation }));
+
+  const notifications = u
+    ? (await prisma.notification.findMany({ where: { userId: u.id }, orderBy: { createdAt: "desc" }, take: 20 })).map((n) => ({
+        id: n.id, type: n.type, title: n.title, body: n.body, createdAt: n.createdAt.toISOString(), read: !!n.readAt,
+      }))
+    : [];
 
   // Central auth guard: a request that reached here with no valid user but on a
   // protected path has a stale/expired cookie — send it through /logout (which
@@ -72,7 +83,7 @@ export default async function RootLayout({
       <body className="font-sans antialiased text-gray-900">
         <LocaleProvider value={{ locale: i18n.locale, dir: i18n.dir, messages: i18n.messages, languages: langOptions }}>
           <AuthProvider user={clientUser}>
-            <AppShell idleMinutes={security.idleMinutes}>{children}</AppShell>
+            <AppShell idleMinutes={security.idleMinutes} notifications={notifications}>{children}</AppShell>
           </AuthProvider>
         </LocaleProvider>
       </body>

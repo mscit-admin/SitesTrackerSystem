@@ -21,6 +21,7 @@ export default async function UsersPage() {
     prisma.role.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true } }),
   ]);
 
+  const iso = (d: Date | null) => (d ? d.toISOString().slice(0, 10) : "");
   const rows = users.map((u) => ({
     id: u.id,
     firstName: u.firstName,
@@ -33,6 +34,8 @@ export default async function UsersPage() {
     roleName: u.role?.name ?? null,
     isActive: u.isActive,
     twoFactorEnabled: u.twoFactorEnabled,
+    validFrom: iso(u.validFrom),
+    validTo: iso(u.validTo),
   }));
 
   return (

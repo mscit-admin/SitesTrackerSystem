@@ -6,6 +6,7 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { parsePerms, permGranted } from "@/lib/permissions";
 import { getSecuritySettings } from "@/lib/settings";
+import { accountActive } from "@/lib/accountExpiry";
 
 // __Host- prefix: browser enforces Secure + Path=/ + no Domain, so no other host
 // on the shared nip.io domain can set/override it. Requires HTTPS (we have it).
@@ -119,7 +120,7 @@ export const getCurrentUser = cache(async (): Promise<AuthUser | null> => {
     await prisma.session.delete({ where: { id: session.id } }).catch(() => {});
     return null;
   }
-  if (!session.user.isActive) return null;
+  if (!accountActive(session.user)) return null;
   // Slide the idle window (throttled to avoid a write on every request).
   if (now - session.lastSeenAt.getTime() > 60_000) {
     await prisma.session.update({ where: { id: session.id }, data: { lastSeenAt: new Date() } }).catch(() => {});

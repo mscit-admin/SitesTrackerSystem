@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserMenu } from "@/components/auth/UserMenu";
 import { LanguageSwitcher } from "@/components/i18n/LanguageSwitcher";
+import { NotificationBell, type NotifItem } from "@/components/NotificationBell";
 import { useT } from "@/components/i18n/LocaleProvider";
 
 const LABEL: Record<string, string> = {
@@ -18,7 +19,7 @@ const LABEL: Record<string, string> = {
   settings: "الإعدادات",
 };
 
-export function Topbar() {
+export function Topbar({ notifications }: { notifications: NotifItem[] }) {
   const path = usePathname();
   const t = useT();
   const seg = path.split("/").filter(Boolean);
@@ -47,6 +48,7 @@ export function Topbar() {
         )}
       </nav>
       <div className="flex items-center gap-2">
+        <NotificationBell items={notifications} />
         <LanguageSwitcher />
         <UserMenu />
       </div>

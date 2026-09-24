@@ -15,6 +15,7 @@ import {
 import { verifyTotp } from "@/lib/totp";
 import { isLocked, recordFailure, recordSuccess } from "@/lib/rateLimit";
 import { getSecuritySettings } from "@/lib/settings";
+import { accountActive } from "@/lib/accountExpiry";
 
 type Res = { ok: boolean; error?: string; need2fa?: boolean };
 
@@ -42,9 +43,14 @@ export async function login(formData: FormData): Promise<Res> {
 
   // Always run a bcrypt compare (constant-ish time; hides whether the id exists).
   const good = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !user.isActive || !good) {
+  if (!user || !good) {
     recordFailure(rlKey, maxFailures, lockMinutes);
     return { ok: false, error: "بيانات الدخول غير صحيحة" };
+  }
+  // Credentials are valid — but the account may be disabled or outside its
+  // validity window (from/to dates).
+  if (!accountActive(user)) {
+    return { ok: false, error: "الحساب معطّل أو انتهت مدة صلاحيته. يُرجى مراجعة مسؤول النظام." };
   }
 
   if (user.twoFactorEnabled && user.twoFactorSecret) {

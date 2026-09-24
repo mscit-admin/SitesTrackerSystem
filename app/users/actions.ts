@@ -8,6 +8,14 @@ import { ALL_PERMISSION_KEYS } from "@/lib/permissions";
 type Res = { ok: boolean; error?: string };
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
+const dateFrom = (fd: FormData, k: string): Date | null => {
+  const v = str(fd, k);
+  return v ? new Date(v + "T00:00:00") : null;
+};
+const dateTo = (fd: FormData, k: string): Date | null => {
+  const v = str(fd, k);
+  return v ? new Date(v + "T23:59:59") : null;
+};
 
 function revalidate() {
   revalidatePath("/users");
@@ -31,12 +39,16 @@ export async function createUser(fd: FormData): Promise<Res> {
   const pwIssue = passwordIssue(password);
   if (pwIssue) return { ok: false, error: pwIssue };
 
+  const validFrom = dateFrom(fd, "validFrom");
+  const validTo = dateTo(fd, "validTo");
+  if (validFrom && validTo && validFrom > validTo) return { ok: false, error: "تاريخ البداية بعد تاريخ النهاية" };
+
   const dup = await prisma.user.findFirst({ where: { OR: [{ email }, { employeeId }] }, select: { id: true } });
   if (dup) return { ok: false, error: "البريد أو الرقم الوظيفي مستخدم مسبقاً" };
 
   await prisma.user.create({
     data: {
-      firstName, lastName, employeeId, email, mobile, roleId,
+      firstName, lastName, employeeId, email, mobile, roleId, validFrom, validTo,
       passwordHash: await hashPassword(password),
       mustChangePassword: true,
       isActive: true,
@@ -59,12 +71,24 @@ export async function updateUser(fd: FormData): Promise<Res> {
   if (!firstName || !lastName || !employeeId || !/^\S+@\S+\.\S+$/.test(email))
     return { ok: false, error: "بيانات غير مكتملة" };
 
+  const validFrom = dateFrom(fd, "validFrom");
+  const validTo = dateTo(fd, "validTo");
+  if (validFrom && validTo && validFrom > validTo) return { ok: false, error: "تاريخ البداية بعد تاريخ النهاية" };
+
   const dup = await prisma.user.findFirst({
     where: { OR: [{ email }, { employeeId }], NOT: { id } }, select: { id: true },
   });
   if (dup) return { ok: false, error: "البريد أو الرقم الوظيفي مستخدم لمستخدم آخر" };
 
-  await prisma.user.update({ where: { id }, data: { firstName, lastName, employeeId, email, mobile, roleId } });
+  const before = await prisma.user.findUnique({ where: { id }, select: { validTo: true, isActive: true } });
+  // Re-enable and reset the warning if the validity window was extended into the future.
+  const reactivate = validTo && new Date() <= validTo && before && !before.isActive ? { isActive: true } : {};
+  const resetWarn = String(before?.validTo?.getTime() ?? "") !== String(validTo?.getTime() ?? "") ? { expiryWarnedAt: null } : {};
+
+  await prisma.user.update({
+    where: { id },
+    data: { firstName, lastName, employeeId, email, mobile, roleId, validFrom, validTo, ...reactivate, ...resetWarn },
+  });
   revalidate();
   return { ok: true };
 }

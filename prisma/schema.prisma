@@ -244,14 +244,32 @@ model User {
   twoFactorSecret   String?   // base32 TOTP secret (set when enabled)
   mustChangePassword Boolean  @default(false)
   isActive          Boolean   @default(true)
+  validFrom         DateTime? // account works from this date
+  validTo           DateTime? // account works until this date (then auto-disabled)
+  expiryWarnedAt    DateTime? // last time an "about to expire" notice was sent
   role              Role?     @relation(fields: [roleId], references: [id])
   roleId            String?
   sessions          Session[]
+  notifications     Notification[]
   lastLoginAt       DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
   @@index([roleId])
+}
+
+/// In-app notification for a user (bell menu).
+model Notification {
+  id        String    @id @default(cuid())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String    // e.g. "account_expiring", "account_disabled"
+  title     String
+  body      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
 }
 
 /// Server-side session: the cookie holds a random token; we store only its hash.

@@ -4,11 +4,19 @@ import { useState } from "react";
 import { UserPlus, Pencil, KeyRound, Power, ShieldCheck, X, Check, AlertTriangle, Eye, EyeOff } from "lucide-react";
 import { createUser, updateUser, setUserActive, resetUserPassword, disableUser2fa } from "@/app/users/actions";
 
+const todayStr = () => new Date().toISOString().slice(0, 10);
+function expired(to: string) { return !!to && to < todayStr(); }
+function expiringSoon(to: string) {
+  if (!to) return false;
+  const days = (new Date(to + "T23:59:59").getTime() - Date.now()) / 86400000;
+  return days >= 0 && days <= 7;
+}
+
 type Role = { id: string; name: string };
 type Row = {
   id: string; firstName: string; lastName: string; employeeId: string; email: string;
   mobile: string | null; avatarUrl: string | null; roleId: string | null; roleName: string | null;
-  isActive: boolean; twoFactorEnabled: boolean;
+  isActive: boolean; twoFactorEnabled: boolean; validFrom: string; validTo: string;
 };
 
 export function UsersManager({
@@ -40,6 +48,7 @@ export function UsersManager({
                 <th className="th">البريد</th>
                 <th className="th">الجوال</th>
                 <th className="th">الدور</th>
+                <th className="th">مدة الصلاحية</th>
                 <th className="th">2FA</th>
                 <th className="th">الحالة</th>
                 <th className="th"></th>
@@ -65,6 +74,15 @@ export function UsersManager({
                   <td className="td text-gray-500" dir="ltr">{u.email}</td>
                   <td className="td text-gray-500" dir="ltr">{u.mobile ?? "—"}</td>
                   <td className="td">{u.roleName ?? <span className="text-gray-400">—</span>}</td>
+                  <td className="td text-xs text-gray-500" dir="ltr">
+                    {u.validFrom || u.validTo ? (
+                      <span className={expired(u.validTo) ? "text-red-600" : expiringSoon(u.validTo) ? "text-amber-600" : ""}>
+                        {u.validFrom || "…"} ← {u.validTo || "…"}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">دائم</span>
+                    )}
+                  </td>
                   <td className="td">
                     {u.twoFactorEnabled
                       ? <span className="chip bg-emerald-50 text-emerald-700 border-emerald-100">مفعّلة</span>
@@ -155,6 +173,13 @@ function UserModal({ roles, initial, onClose }: { roles: Role[]; initial: Row | 
               <option value="">— بدون دور —</option>
               {roles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
             </select>
+          </F>
+          <F label="صلاحية الحساب من">
+            <input name="validFrom" type="date" defaultValue={initial?.validFrom ?? ""} className="field w-full" dir="ltr" />
+          </F>
+          <F label="صلاحية الحساب إلى">
+            <input name="validTo" type="date" defaultValue={initial?.validTo ?? ""} className="field w-full" dir="ltr" />
+            <p className="mt-1 text-[11px] text-gray-400">يُعطَّل الحساب تلقائياً بعد هذا التاريخ. اتركه فارغاً لحساب دائم.</p>
           </F>
           {!isEdit && (
             <>
