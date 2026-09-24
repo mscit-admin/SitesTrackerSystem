@@ -83,7 +83,7 @@ export default async function NominalPointDetailPage({
           يبحث المالك (AAT) ويختار حتى 3 مرشّحين. الأولوية لشركات القطاع، ثم المواطنون/أخرى.
           {activeCount >= 3 && <span className="mr-1 text-amber-600">— بلغت 3 مرشّحين نشطين.</span>}
         </p>
-        <CandidateForm nominalPointId={np.id} defaultLat={np.latitude} defaultLng={np.longitude} />
+        <CandidateForm nominalPointId={np.id} />
       </div>
 
       <h2 className="mb-3 text-base font-semibold text-gray-900">المرشّحون ({candidates.length})</h2>
