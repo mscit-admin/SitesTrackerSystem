@@ -3,8 +3,9 @@
 import { useRef, useState } from "react";
 import { Plus, Pencil, Star, Power, Trash2, Download, Upload, X, Check, AlertTriangle, Globe } from "lucide-react";
 import {
-  addLanguage, updateLanguage, setLanguageEnabled, setDefaultLanguage, deleteLanguage, importTranslations,
+  addLanguage, updateLanguage, setLanguageEnabled, setDefaultLanguage, deleteLanguage,
 } from "@/app/actions/i18n";
+import { useRouter } from "next/navigation";
 
 type Lang = {
   code: string; name: string; abbreviation: string; direction: string;
@@ -153,21 +154,47 @@ function LangModal({ initial, onClose }: { initial: Lang | null; onClose: () => 
 
 function ImportModal({ lang, onClose }: { lang: Lang; onClose: () => void }) {
   const fileRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
   const [msg, setMsg] = useState<string | null>(null);
+  const [ok, setOk] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0); // 0..100 upload
+  const [processing, setProcessing] = useState(false); // server-side after upload
 
-  async function submit() {
+  function submit() {
     const file = fileRef.current?.files?.[0];
-    if (!file) { setMsg("اختر ملف CSV أولاً"); return; }
-    setBusy(true); setMsg(null);
-    const text = await file.text();
+    if (!file) { setOk(false); setMsg("اختر ملف CSV أولاً"); return; }
+    setBusy(true); setMsg(null); setOk(false); setProgress(0); setProcessing(false);
+
     const fd = new FormData();
     fd.append("code", lang.code);
-    fd.append("csv", text);
-    const res = await importTranslations(fd);
-    setBusy(false);
-    if (res.ok) setMsg(`تم استيراد ${res.count ?? 0} ترجمة بنجاح.`);
-    else setMsg(res.error ?? "تعذّر الاستيراد");
+    fd.append("file", file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/i18n/import");
+    // Real upload progress from the browser.
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        setProgress(pct);
+        if (pct >= 100) setProcessing(true); // upload done, server now working
+      }
+    };
+    xhr.onload = () => {
+      setBusy(false); setProcessing(false);
+      let res: any = null;
+      try { res = JSON.parse(xhr.responseText); } catch { /* ignore */ }
+      if (xhr.status === 200 && res?.ok) {
+        setProgress(100); setOk(true);
+        setMsg(`تم استيراد ${res.count ?? 0} ترجمة بنجاح.`);
+        router.refresh(); // refresh the languages list (counts)
+      } else {
+        setOk(false);
+        setMsg(res?.error ?? "تعذّر الاستيراد");
+      }
+    };
+    xhr.onerror = () => { setBusy(false); setProcessing(false); setOk(false); setMsg("خطأ في الاتصال أثناء الرفع"); };
+    xhr.send(fd);
   }
 
   return (
@@ -177,8 +204,29 @@ function ImportModal({ lang, onClose }: { lang: Lang; onClose: () => void }) {
           صدّر ملف CSV، املأ العمود الثالث بالترجمة، ثم استورده هنا. تُحدَّث الواجهة فوراً بعد الاستيراد.
         </p>
         <a href={`/api/i18n/export?lang=${lang.code}`} className="btn-ghost inline-flex items-center gap-1.5"><Download size={15} /> تنزيل ملف الترجمة الحالي</a>
-        <input ref={fileRef} type="file" accept=".csv,text/csv" className="block w-full text-sm" />
-        {msg && <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-700">{msg}</div>}
+        <input ref={fileRef} type="file" accept=".csv,text/csv" disabled={busy} className="block w-full text-sm disabled:opacity-50" />
+
+        {busy && (
+          <div>
+            <div className="mb-1 flex items-center justify-between text-[11px] text-gray-500">
+              <span>{processing ? "جارٍ المعالجة على الخادم…" : "جارٍ رفع الملف…"}</span>
+              <span className="tabular-nums">{progress}%</span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className={`h-full rounded-full bg-brand transition-[width] duration-150 ${processing ? "animate-pulse" : ""}`}
+                style={{ width: `${progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        {msg && (
+          <div className={`rounded-md border px-3 py-2 text-sm ${ok ? "border-emerald-100 bg-emerald-50 text-emerald-700" : "border-gray-200 bg-gray-50 text-gray-700"}`}>
+            {msg}
+          </div>
+        )}
+
         <div className="flex justify-end gap-2">
           <button type="button" onClick={onClose} className="btn-ghost">إغلاق</button>
           <button type="button" onClick={submit} disabled={busy} className="btn-primary flex items-center gap-1.5">
