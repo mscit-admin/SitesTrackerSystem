@@ -2,6 +2,7 @@ import { getCurrentUser, can } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ALL_MESSAGE_KEYS } from "@/lib/messages";
 import { toCsv } from "@/lib/csv";
+import { logAudit, AUDIT } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
@@ -22,6 +23,10 @@ export async function GET(req: Request) {
 
   const rows: string[][] = [["source", lang.name]];
   for (const key of ALL_MESSAGE_KEYS) rows.push([key, existing.get(key) ?? ""]);
+
+  await logAudit({ category: AUDIT.EXPORT_IMPORT, action: "EXPORT", actor: me,
+    entity: "Translation", entityId: code, entityLabel: `${lang.name} (${code})`,
+    summary: `تصدير ملف ترجمة CSV للغة ${lang.name} (${code})` });
 
   return new Response(toCsv(rows), {
     headers: {

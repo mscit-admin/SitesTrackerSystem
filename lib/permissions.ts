@@ -172,6 +172,20 @@ export const PERMISSION_CATALOG: PermModule[] = [
     ],
   },
   {
+    id: "audit",
+    label: "سجل التدقيق",
+    groups: [
+      {
+        id: "audit",
+        label: "سجل التدقيق والأمان",
+        actions: [
+          A("audit.view", "عرض السجل"),
+          A("audit.export", "تصدير السجل (CSV)"),
+        ],
+      },
+    ],
+  },
+  {
     id: "localization",
     label: "اللغات والترجمة",
     groups: [

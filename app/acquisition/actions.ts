@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { deriveLifecycle } from "@/lib/lifecycle";
-import { ownerTypeOf } from "@/lib/acquisition";
+import { ownerTypeOf, stageLabel } from "@/lib/acquisition";
+import { getCurrentUser } from "@/lib/auth";
+import { logAudit, AUDIT } from "@/lib/audit";
+
+const actor = () => getCurrentUser();
 
 const str = (fd: FormData, k: string): string | null => {
   const v = fd.get(k);
@@ -47,6 +51,9 @@ export async function createNominalPoint(fd: FormData) {
       notes: str(fd, "notes"),
     },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "CREATE", actor: await actor(),
+    entity: "NominalPoint", entityId: np.id, entityLabel: ref,
+    summary: `إنشاء نقطة اسمية: ${ref}`, after: { ref, name: np.name, region: np.region } });
   revalidateAcq();
   redirect(`/acquisition/${np.id}`);
 }
@@ -56,7 +63,7 @@ export async function addCandidate(fd: FormData) {
   const nominalPointId = str(fd, "nominalPointId");
   if (!nominalPointId) return { ok: false, error: "نقطة غير معروفة" };
   const towerOwner = str(fd, "towerOwner");
-  await prisma.candidateSite.create({
+  const cand = await prisma.candidateSite.create({
     data: {
       nominalPointId,
       name: str(fd, "name"),
@@ -75,6 +82,10 @@ export async function addCandidate(fd: FormData) {
       stage: "SUBMITTED",
     },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "CREATE", actor: await actor(),
+    entity: "CandidateSite", entityId: cand.id, entityLabel: cand.name ?? "(بلا اسم)",
+    summary: `إضافة مرشّح: ${cand.name ?? "(بلا اسم)"}`,
+    after: { name: cand.name, towerOwner, latitude: cand.latitude, longitude: cand.longitude } });
   revalidateAcq(nominalPointId);
   return { ok: true };
 }
@@ -94,6 +105,8 @@ export async function updateNominalPoint(fd: FormData) {
       notes: str(fd, "notes"),
     },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "UPDATE", actor: await actor(),
+    entity: "NominalPoint", entityId: id, entityLabel: str(fd, "name") ?? id, summary: "تعديل نقطة اسمية" });
   revalidateAcq(id);
   return { ok: true };
 }
@@ -119,8 +132,10 @@ export async function updateCandidate(fd: FormData) {
       contactPhone: str(fd, "contactPhone"),
       address: str(fd, "address"),
     },
-    select: { nominalPointId: true },
+    select: { nominalPointId: true, name: true },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "UPDATE", actor: await actor(),
+    entity: "CandidateSite", entityId: id, entityLabel: c.name ?? id, summary: `تعديل مرشّح: ${c.name ?? id}` });
   revalidateAcq(c.nominalPointId);
   return { ok: true };
 }
@@ -138,8 +153,10 @@ export async function updateSurvey(fd: FormData) {
       proposedEquipment: str(fd, "proposedEquipment"),
       installationReq: str(fd, "installationReq"),
     },
-    select: { nominalPointId: true },
+    select: { nominalPointId: true, name: true },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "UPDATE", actor: await actor(),
+    entity: "CandidateSite", entityId: id, entityLabel: c.name ?? id, summary: `تعديل بيانات مسح المرشّح: ${c.name ?? id}` });
   revalidateAcq(c.nominalPointId);
   return { ok: true };
 }
@@ -152,8 +169,12 @@ async function setStage(
   const c = await prisma.candidateSite.update({
     where: { id: candidateId },
     data: { stage, ...extra },
-    select: { nominalPointId: true },
+    select: { nominalPointId: true, name: true },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "STAGE_CHANGE", actor: await actor(),
+    entity: "CandidateSite", entityId: candidateId, entityLabel: c.name ?? candidateId,
+    summary: `تغيير مرحلة المرشّح "${c.name ?? candidateId}" إلى: ${stageLabel(stage)}`,
+    after: { stage, ...extra } });
   revalidateAcq(c.nominalPointId);
 }
 
@@ -228,6 +249,9 @@ export async function addCandidateEquipment(fd: FormData) {
       quantity: num(fd, "quantity") ?? 1,
     },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "CREATE", actor: await actor(),
+    entity: "CandidateEquipment", entityId: candidateId, entityLabel: equipmentType,
+    summary: `إضافة معدة للمرشّح: ${equipmentType} ×${num(fd, "quantity") ?? 1}` });
   revalidateAcq(cand.nominalPointId);
   return { ok: true };
 }
@@ -237,8 +261,11 @@ export async function removeCandidateEquipment(fd: FormData) {
   if (!id) return;
   const eq = await prisma.candidateEquipment.delete({
     where: { id },
-    select: { candidate: { select: { nominalPointId: true } } },
+    select: { equipmentType: true, candidate: { select: { nominalPointId: true } } },
   });
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "DELETE", actor: await actor(),
+    entity: "CandidateEquipment", entityId: id, entityLabel: eq.equipmentType,
+    summary: `حذف معدة من المرشّح: ${eq.equipmentType}` });
   revalidateAcq(eq.candidate.nominalPointId);
 }
 
@@ -304,6 +331,10 @@ export async function convertToSite(fd: FormData) {
     data: { status: "ACQUIRED" },
   });
 
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "CREATE", actor: await actor(),
+    entity: "Site", entityId: site.id, entityLabel: siteId,
+    summary: `تحويل مرشّح إلى موقع: ${siteId}`,
+    after: { siteId, name: site.name, fromCandidate: candidateId } });
   revalidateAcq(cand.nominalPointId);
   revalidatePath("/sites");
   redirect(`/sites/${site.id}/edit`);

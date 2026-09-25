@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/auth";
 import { LOCALE_COOKIE } from "@/lib/i18n";
 import { ALL_MESSAGE_KEYS } from "@/lib/messages";
 import { parseCsv } from "@/lib/csv";
+import { logAudit, AUDIT } from "@/lib/audit";
 
 type Res = { ok: boolean; error?: string; count?: number };
 
@@ -23,7 +24,7 @@ export async function setLocale(code: string): Promise<void> {
 
 // ---------------- Admin: language management ----------------
 export async function addLanguage(fd: FormData): Promise<Res> {
-  await requirePermission("localization.languages");
+  const me = await requirePermission("localization.languages");
   const code = str(fd, "code").toLowerCase();
   const name = str(fd, "name");
   const abbreviation = str(fd, "abbreviation").toUpperCase();
@@ -36,59 +37,73 @@ export async function addLanguage(fd: FormData): Promise<Res> {
   await prisma.language.create({
     data: { code, name, abbreviation, direction, isEnabled: true, sortOrder: (max._max.sortOrder ?? 0) + 1 },
   });
+  await logAudit({ category: AUDIT.POLICY, action: "LANGUAGE_CHANGE", actor: me,
+    entity: "Language", entityId: code, entityLabel: `${name} (${code})`,
+    summary: `إضافة لغة: ${name} (${code})`, after: { code, name, abbreviation, direction } });
   revalidatePath("/settings/languages");
   return { ok: true };
 }
 
 export async function updateLanguage(fd: FormData): Promise<Res> {
-  await requirePermission("localization.languages");
+  const me = await requirePermission("localization.languages");
   const code = str(fd, "code");
   const name = str(fd, "name");
   const abbreviation = str(fd, "abbreviation").toUpperCase();
   const direction = str(fd, "direction") === "rtl" ? "rtl" : "ltr";
   if (!name || !abbreviation) return { ok: false, error: "الاسم والاختصار مطلوبان" };
   await prisma.language.update({ where: { code }, data: { name, abbreviation, direction } });
+  await logAudit({ category: AUDIT.POLICY, action: "LANGUAGE_CHANGE", actor: me,
+    entity: "Language", entityId: code, entityLabel: `${name} (${code})`,
+    summary: `تعديل لغة: ${name} (${code})`, after: { name, abbreviation, direction } });
   revalidatePath("/settings/languages");
   return { ok: true };
 }
 
 export async function setLanguageEnabled(fd: FormData): Promise<Res> {
-  await requirePermission("localization.languages");
+  const me = await requirePermission("localization.languages");
   const code = str(fd, "code");
   const enabled = str(fd, "enabled") === "1";
   const lang = await prisma.language.findUnique({ where: { code } });
   if (!lang) return { ok: false, error: "غير موجودة" };
   if (!enabled && lang.isDefault) return { ok: false, error: "لا يمكن تعطيل اللغة الافتراضية" };
   await prisma.language.update({ where: { code }, data: { isEnabled: enabled } });
+  await logAudit({ category: AUDIT.POLICY, action: "LANGUAGE_CHANGE", actor: me,
+    entity: "Language", entityId: code, entityLabel: `${lang.name} (${code})`,
+    summary: `${enabled ? "تفعيل" : "تعطيل"} لغة: ${lang.name} (${code})` });
   revalidatePath("/settings/languages");
   return { ok: true };
 }
 
 export async function setDefaultLanguage(fd: FormData): Promise<Res> {
-  await requirePermission("localization.languages");
+  const me = await requirePermission("localization.languages");
   const code = str(fd, "code");
   await prisma.$transaction([
     prisma.language.updateMany({ data: { isDefault: false } }),
     prisma.language.update({ where: { code }, data: { isDefault: true, isEnabled: true } }),
   ]);
+  await logAudit({ category: AUDIT.POLICY, action: "LANGUAGE_CHANGE", actor: me,
+    entity: "Language", entityId: code, entityLabel: code, summary: `تعيين اللغة الافتراضية: ${code}` });
   revalidatePath("/settings/languages");
   return { ok: true };
 }
 
 export async function deleteLanguage(fd: FormData): Promise<Res> {
-  await requirePermission("localization.languages");
+  const me = await requirePermission("localization.languages");
   const code = str(fd, "code");
   const lang = await prisma.language.findUnique({ where: { code } });
   if (!lang) return { ok: false, error: "غير موجودة" };
   if (lang.isDefault) return { ok: false, error: "لا يمكن حذف اللغة الافتراضية" };
   await prisma.language.delete({ where: { code } });
+  await logAudit({ category: AUDIT.POLICY, action: "LANGUAGE_CHANGE", actor: me,
+    entity: "Language", entityId: code, entityLabel: `${lang.name} (${code})`,
+    summary: `حذف لغة: ${lang.name} (${code})`, before: { code, name: lang.name } });
   revalidatePath("/settings/languages");
   return { ok: true };
 }
 
 /** Import a translated CSV (columns: key, source, translation) for a language. */
 export async function importTranslations(fd: FormData): Promise<Res> {
-  await requirePermission("localization.translate");
+  const me = await requirePermission("localization.translate");
   const code = str(fd, "code");
   const csv = String(fd.get("csv") ?? "");
   const lang = await prisma.language.findUnique({ where: { code }, select: { code: true } });
@@ -118,6 +133,9 @@ export async function importTranslations(fd: FormData): Promise<Res> {
     count++;
   }
   if (ops.length) await prisma.$transaction(ops);
+  await logAudit({ category: AUDIT.EXPORT_IMPORT, action: "IMPORT", actor: me,
+    entity: "Translation", entityId: code, entityLabel: code,
+    summary: `استيراد ترجمة للغة ${code}: ${count} نص`, after: { count } });
   revalidatePath("/settings/languages");
   revalidatePath("/", "layout");
   return { ok: true, count };

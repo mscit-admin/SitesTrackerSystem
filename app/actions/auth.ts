@@ -9,6 +9,7 @@ import {
   hashPassword,
   verifyPassword,
   requireUser,
+  getCurrentUser,
   DUMMY_HASH,
   setMustChangeCookie,
 } from "@/lib/auth";
@@ -17,6 +18,14 @@ import { verifyTotp } from "@/lib/totp";
 import { isLocked, recordFailure, recordSuccess } from "@/lib/rateLimit";
 import { getSecuritySettings } from "@/lib/settings";
 import { accountActive } from "@/lib/accountExpiry";
+import { logAudit, AUDIT } from "@/lib/audit";
+
+const actorOf = (u: { id: string; firstName: string; lastName: string; email: string; role?: { name: string } | null }) => ({
+  id: u.id,
+  fullName: `${u.firstName} ${u.lastName}`.trim(),
+  email: u.email,
+  roleName: u.role?.name ?? null,
+});
 
 type Res = { ok: boolean; error?: string; need2fa?: boolean; mustChange?: boolean };
 
@@ -35,22 +44,30 @@ export async function login(formData: FormData): Promise<Res> {
 
   const lock = isLocked(rlKey);
   if (lock.locked) {
+    await logAudit({ category: AUDIT.AUTH, action: "LOGIN_LOCKED", success: false, actor: null,
+      entityLabel: identifier, summary: `حظر مؤقت بسبب محاولات دخول كثيرة (${identifier})`, ip });
     return { ok: false, error: `محاولات كثيرة. حاول بعد ${Math.ceil((lock.retryAfterSec ?? 0) / 60)} دقيقة.` };
   }
 
   const user = await prisma.user.findFirst({
     where: { OR: [{ email: identifier }, { employeeId: identifier }] },
+    include: { role: true },
   });
 
   // Always run a bcrypt compare (constant-ish time; hides whether the id exists).
   const good = await verifyPassword(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !good) {
     recordFailure(rlKey, maxFailures, lockMinutes);
+    await logAudit({ category: AUDIT.AUTH, action: "LOGIN_FAILURE", success: false,
+      actor: user ? actorOf(user) : null, entityLabel: identifier,
+      summary: `محاولة دخول فاشلة (${identifier})`, ip });
     return { ok: false, error: "بيانات الدخول غير صحيحة" };
   }
   // Credentials are valid — but the account may be disabled or outside its
   // validity window (from/to dates).
   if (!accountActive(user)) {
+    await logAudit({ category: AUDIT.AUTH, action: "LOGIN_DISABLED", success: false, actor: actorOf(user),
+      entityLabel: identifier, summary: "محاولة دخول لحساب معطّل أو منتهي الصلاحية", ip });
     return { ok: false, error: "الحساب معطّل أو انتهت مدة صلاحيته. يُرجى مراجعة مسؤول النظام." };
   }
 
@@ -58,6 +75,8 @@ export async function login(formData: FormData): Promise<Res> {
     if (!totp) return { ok: false, need2fa: true };
     if (!verifyTotp(totp, user.twoFactorSecret)) {
       recordFailure(rlKey, maxFailures, lockMinutes);
+      await logAudit({ category: AUDIT.AUTH, action: "LOGIN_2FA_FAILURE", success: false, actor: actorOf(user),
+        entityLabel: identifier, summary: "فشل رمز التحقق الثنائي (2FA)", ip });
       return { ok: false, need2fa: true, error: "رمز التحقق غير صحيح" };
     }
   }
@@ -66,10 +85,14 @@ export async function login(formData: FormData): Promise<Res> {
   await createSession(user.id, hdrs.get("user-agent"));
   await setMustChangeCookie(user.mustChangePassword); // gate handled by middleware
   await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+  await logAudit({ category: AUDIT.AUTH, action: "LOGIN_SUCCESS", actor: actorOf(user),
+    entityLabel: user.email, summary: "تسجيل دخول ناجح", ip });
   return { ok: true, mustChange: user.mustChangePassword };
 }
 
 export async function logout() {
+  const me = await getCurrentUser();
+  if (me) await logAudit({ category: AUDIT.AUTH, action: "LOGOUT", actor: me, entityLabel: me.email, summary: "تسجيل خروج" });
   await destroyCurrentSession();
   redirect("/login");
 }
@@ -94,5 +117,7 @@ export async function changeOwnPassword(formData: FormData): Promise<Res> {
     data: { passwordHash: await hashPassword(next), mustChangePassword: false },
   });
   await setMustChangeCookie(false); // lift the middleware gate
+  await logAudit({ category: AUDIT.SECURITY, action: "PASSWORD_CHANGE", actor: me,
+    entity: "User", entityId: me.id, entityLabel: me.email, summary: "غيّر المستخدم كلمة مروره" });
   return { ok: true };
 }

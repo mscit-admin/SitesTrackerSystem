@@ -6,6 +6,10 @@ import { redirect } from "next/navigation";
 import { deriveLifecycle } from "@/lib/lifecycle";
 import { SECTION_BY_ID, FieldDef } from "@/lib/formSchema";
 import { parseMasterSites, buildSiteData } from "@/lib/importMaster";
+import { getCurrentUser } from "@/lib/auth";
+import { logAudit, AUDIT } from "@/lib/audit";
+
+const actor = () => getCurrentUser();
 
 function coerce(field: FieldDef, raw: FormDataEntryValue | null): any {
   if (raw === null) return undefined;
@@ -118,6 +122,9 @@ export async function saveSiteSection(formData: FormData) {
     }),
   ]);
 
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "UPDATE", actor: await actor(),
+    entity: "Site", entityId: siteId, entityLabel: site.siteId,
+    summary: `تعديل بيانات الموقع ${site.siteId} — قسم: ${sectionId}`, after: siteColumns });
   revalidatePath(`/sites/${siteId}`);
   revalidatePath(`/sites/${siteId}/edit`);
   revalidatePath("/sites");
@@ -153,6 +160,8 @@ export async function createSite(formData: FormData) {
     },
   });
 
+  await logAudit({ category: AUDIT.DATA_CHANGE, action: "CREATE", actor: await actor(),
+    entity: "Site", entityId: created.id, entityLabel: code, summary: `إنشاء موقع: ${code}` });
   revalidatePath("/sites");
   revalidatePath("/");
   redirect(`/sites/${created.id}/edit`);
@@ -219,6 +228,10 @@ export async function importSitesFromExcel(formData: FormData) {
     }
   }
 
+  await logAudit({ category: AUDIT.EXPORT_IMPORT, action: "IMPORT", actor: await actor(),
+    entity: "Site", entityLabel: (file as File).name ?? "GSDN Master",
+    summary: `استيراد مواقع من إكسل: ${created} جديد، ${updated} محدّث، ${failed} فشل`,
+    after: { total: rows.length, created, updated, failed } });
   revalidatePath("/sites");
   revalidatePath("/");
   return { ok: true, total: rows.length, created, updated, failed, errors };

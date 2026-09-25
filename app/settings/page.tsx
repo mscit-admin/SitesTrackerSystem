@@ -5,9 +5,11 @@ import { CatalogManager } from "@/components/CatalogManager";
 import { PageSizeSetting } from "@/components/PageSizeSetting";
 import { SecuritySettings } from "@/components/SecuritySettings";
 import { PasswordPolicySettings } from "@/components/PasswordPolicySettings";
+import { AuditRetentionSettings } from "@/components/AuditRetentionSettings";
 import { getSitesPageSize } from "@/lib/queries";
 import { getSecuritySettings } from "@/lib/settings";
 import { getPasswordPolicy, scriptForCode } from "@/lib/passwordPolicy";
+import { getAuditRetentionMonths } from "@/lib/audit";
 import { getCurrentUser, can } from "@/lib/auth";
 import { Languages, ChevronLeft } from "lucide-react";
 import {
@@ -25,13 +27,14 @@ export default async function SettingsPage() {
   if (!can(me, "settings.view")) redirect("/");
   const canEdit = can(me, "settings.edit");
 
-  const [types, makers, pageSize, security, pwPolicy, langs] = await Promise.all([
+  const [types, makers, pageSize, security, pwPolicy, langs, auditRetention] = await Promise.all([
     prisma.equipmentType.findMany({ orderBy: { name: "asc" } }),
     prisma.manufacturer.findMany({ orderBy: { name: "asc" } }),
     getSitesPageSize(),
     getSecuritySettings(),
     getPasswordPolicy(),
     prisma.language.findMany({ orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { code: true, name: true } }),
+    getAuditRetentionMonths(),
   ]);
   const policyLangs = langs.map((l) => ({ code: l.code, name: l.name, script: scriptForCode(l.code) }));
 
@@ -47,6 +50,11 @@ export default async function SettingsPage() {
       <div className="mb-6">
         <PasswordPolicySettings current={pwPolicy} languages={policyLangs} canEdit={canEdit} />
       </div>
+      {can(me, "audit.view") && (
+        <div className="mb-6">
+          <AuditRetentionSettings current={auditRetention} canEdit={canEdit} />
+        </div>
+      )}
       {can(me, "localization.view") && (
         <div className="mb-6">
           <a href="/settings/languages" className="card flex items-center justify-between p-5 hover:bg-gray-50">

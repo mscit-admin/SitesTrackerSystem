@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { getSecuritySettings } from "@/lib/settings";
 import { getI18n, getEnabledLanguages } from "@/lib/i18n";
 import { sweepAccountExpiry } from "@/lib/accountExpiry";
+import { sweepAuditRetention } from "@/lib/audit";
 import { prisma } from "@/lib/prisma";
 import { AuthProvider, type ClientUser } from "@/components/auth/AuthProvider";
 import { AppShell } from "@/components/auth/AppShell";
@@ -24,6 +25,8 @@ export default async function RootLayout({
 }) {
   // Periodically disable expired accounts + queue expiry notices (throttled).
   await sweepAccountExpiry().catch(() => {});
+  // Prune audit rows past the retention window (throttled to once/day).
+  await sweepAuditRetention().catch(() => {});
 
   const [u, security, i18n, enabledLangs] = await Promise.all([
     getCurrentUser(), getSecuritySettings(), getI18n(), getEnabledLanguages(),

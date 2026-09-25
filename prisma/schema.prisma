@@ -416,6 +416,40 @@ model Manufacturer {
   createdAt DateTime @default(now())
 }
 
+/// Immutable audit trail. Every security-relevant event and data change is
+/// appended here (never edited or deleted from the app). Actor identity is
+/// denormalised (name/email snapshot) so the record survives user deletion.
+model AuditLog {
+  id          String   @id @default(cuid())
+  category    String   // AUTH / DATA_CHANGE / SECURITY / POLICY / EXPORT_IMPORT / SYSTEM
+  action      String   // LOGIN_SUCCESS, CREATE, UPDATE, DELETE, EXPORT, PERMISSION_DENIED, ...
+  success     Boolean  @default(true)
+
+  entity      String?  // "User" / "Role" / "CandidateSite" / "AppSetting" / ...
+  entityId    String?
+  entityLabel String?  // human-friendly identifier snapshot (name / ref / email)
+  summary     String?  // short Arabic description shown in the viewer
+
+  before      String?  // JSON snapshot of old values (updates/deletes)
+  after       String?  // JSON snapshot of new values (creates/updates)
+
+  actorId     String?  // user id (null for anonymous / failed login)
+  actorName   String?  // denormalised display name
+  actorEmail  String?
+  actorRole   String?
+
+  ip          String?
+  userAgent   String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([category, createdAt])
+  @@index([action, createdAt])
+  @@index([actorId, createdAt])
+  @@index([entity, entityId])
+}
+
 /// An equipment line determined for a candidate (type + manufacturer + qty).
 model CandidateEquipment {
   id            String        @id @default(cuid())

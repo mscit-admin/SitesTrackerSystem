@@ -15,6 +15,7 @@ const LABEL: Record<string, string> = {
   risks: "سجل المخاطر",
   deletions: "طلبات الحذف",
   users: "المستخدمون والصلاحيات",
+  audit: "سجل التدقيق",
   account: "حسابي",
   settings: "الإعدادات",
 };

@@ -11,6 +11,7 @@ import {
   Settings,
   Trash2,
   Users,
+  ScrollText,
   type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -24,6 +25,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; perm?: string }[] = 
   { href: "/risks", label: "سجل المخاطر", icon: ShieldAlert, perm: "risks.view" },
   { href: "/deletions", label: "طلبات الحذف", icon: Trash2, perm: "deletions.view" },
   { href: "/users", label: "المستخدمون والصلاحيات", icon: Users, perm: "users.view" },
+  { href: "/audit", label: "سجل التدقيق", icon: ScrollText, perm: "audit.view" },
   { href: "/settings", label: "الإعدادات", icon: Settings, perm: "settings.view" },
 ];
 

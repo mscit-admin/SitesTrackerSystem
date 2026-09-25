@@ -154,6 +154,20 @@ export async function requireUser(): Promise<AuthUser> {
 /** Throw if the current user lacks a permission. */
 export async function requirePermission(key: string): Promise<AuthUser> {
   const u = await requireUser();
-  if (!can(u, key)) throw new Error("FORBIDDEN");
+  if (!can(u, key)) {
+    // Record the denied attempt (best-effort; never blocks the throw).
+    const { logAudit, AUDIT } = await import("@/lib/audit");
+    await logAudit({
+      category: AUDIT.SECURITY,
+      action: "PERMISSION_DENIED",
+      success: false,
+      actor: u,
+      entity: "Permission",
+      entityId: key,
+      entityLabel: key,
+      summary: `محاولة تنفيذ إجراء دون صلاحية: ${key}`,
+    }).catch(() => {});
+    throw new Error("FORBIDDEN");
+  }
   return u;
 }
