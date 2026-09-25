@@ -19,14 +19,17 @@ export function LanguageSwitcher() {
   if (!languages || languages.length <= 1) return null;
   const current = languages.find((l) => l.code === locale);
 
-  async function choose(code: string) {
+  function choose(code: string) {
     setOpen(false);
     if (code === locale) return;
-    await setLocale(code);
-    // Hard reload: the runtime translator rewrites text nodes in place, so a soft
-    // refresh would leave the previous language stuck on already-translated nodes.
-    // A full reload re-renders from the Arabic source, then translates cleanly.
-    window.location.reload();
+    // Set the locale cookie on the client immediately so the reloaded request
+    // is guaranteed to carry the chosen language (no dependency on the server
+    // action's Set-Cookie having flushed first).
+    try { document.cookie = `gsdn_locale=${code}; path=/; max-age=31536000; samesite=lax`; } catch {}
+    // Persist server-side too (best effort), then hard reload. A hard reload
+    // re-renders from the Arabic source and translates cleanly — a soft refresh
+    // would leave the previous language stuck on already-translated text nodes.
+    Promise.resolve(setLocale(code)).finally(() => window.location.reload());
   }
 
   return (
