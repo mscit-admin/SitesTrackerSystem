@@ -32,3 +32,6 @@ next-env.d.ts
 
 # runtime uploads (avatars)
 /public/uploads/
+
+# deploy: last-installed lockfile hash (local only)
+.deploy-deps-hash

@@ -18,8 +18,25 @@ echo "→ Pulling latest…"
 git pull origin "$BRANCH"
 echo "  now at: $(git log --oneline -1)"
 
-echo "→ Installing dependencies (npm ci)…"
-npm ci
+# Install dependencies ONLY when the lockfile actually changed since the last
+# successful install. Reinstalling identical packages on every deploy wastes
+# memory and can trigger the OOM killer on a busy VPS (npm ci deletes and
+# rebuilds node_modules). We fall back to `npm install` if `npm ci` is killed.
+HASH_FILE=".deploy-deps-hash"
+LOCK_HASH="$( (sha1sum package-lock.json 2>/dev/null || shasum package-lock.json 2>/dev/null) | awk '{print $1}')"
+if [ -d node_modules ] && [ -f "$HASH_FILE" ] && [ "$LOCK_HASH" = "$(cat "$HASH_FILE" 2>/dev/null)" ]; then
+  echo "→ Dependencies unchanged — skipping install."
+else
+  echo "→ Installing dependencies…"
+  # --no-audit/--no-fund reduce work/memory; --prefer-offline reuses the cache.
+  if npm ci --no-audit --no-fund --prefer-offline; then
+    :
+  else
+    echo "  npm ci failed (possibly OOM) — retrying with npm install…"
+    npm install --no-audit --no-fund --prefer-offline
+  fi
+  echo "$LOCK_HASH" > "$HASH_FILE"
+fi
 
 echo "→ Syncing database schema…"
 npx prisma db push --accept-data-loss
