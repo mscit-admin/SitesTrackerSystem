@@ -201,7 +201,9 @@ function ImportModal({ lang, onClose }: { lang: Lang; onClose: () => void }) {
     <Modal title={`استيراد ترجمة: ${lang.name}`} onClose={onClose}>
       <div className="space-y-3">
         <p className="text-xs text-gray-500">
-          صدّر ملف CSV، املأ العمود الثالث بالترجمة، ثم استورده هنا. تُحدَّث الواجهة فوراً بعد الاستيراد.
+          صدّر ملف CSV، املأ عمود الترجمة، ثم استورده هنا. تُحدَّث الواجهة فوراً بعد الاستيراد.
+          <br />
+          <span className="text-[11px] text-amber-600">ملاحظة: أبقِ الرموز مثل <span dir="ltr" className="font-mono">{"{0}"}</span> و<span dir="ltr" className="font-mono">{"{1}"}</span> كما هي داخل الترجمة — تُستبدل تلقائياً بالقيم (الأرقام/الأسماء).</span>
         </p>
         <a href={`/api/i18n/export?lang=${lang.code}`} className="btn-ghost inline-flex items-center gap-1.5"><Download size={15} /> تنزيل ملف الترجمة الحالي</a>
         <input ref={fileRef} type="file" accept=".csv,text/csv" disabled={busy} className="block w-full text-sm disabled:opacity-50" />

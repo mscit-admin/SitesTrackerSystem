@@ -1,13 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Languages, Check, ChevronDown } from "lucide-react";
 import { useLocale } from "@/components/i18n/LocaleProvider";
 import { setLocale } from "@/app/actions/i18n";
 
 export function LanguageSwitcher() {
-  const router = useRouter();
   const { locale, languages } = useLocale();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -25,7 +23,10 @@ export function LanguageSwitcher() {
     setOpen(false);
     if (code === locale) return;
     await setLocale(code);
-    router.refresh();
+    // Hard reload: the runtime translator rewrites text nodes in place, so a soft
+    // refresh would leave the previous language stuck on already-translated nodes.
+    // A full reload re-renders from the Arabic source, then translates cleanly.
+    window.location.reload();
   }
 
   return (

@@ -6,5 +6,9 @@
 
 export const SOURCE_LOCALE = "ar";
 
-// Full catalog of translatable source strings (auto-generated on build).
-export { CATALOG as ALL_MESSAGE_KEYS } from "@/lib/i18nCatalog";
+import { CATALOG, TEMPLATES } from "@/lib/i18nCatalog";
+
+// Full set of translatable source keys = static strings + interpolation
+// templates ({0},{1},…). Both are exported to the CSV so nothing is missed.
+export const ALL_MESSAGE_KEYS: string[] = [...CATALOG, ...TEMPLATES];
+export { TEMPLATES };
